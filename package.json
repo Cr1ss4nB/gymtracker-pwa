@@ -1,0 +1,21 @@
+{
+    "name": "gymtracker-pwa",
+    "version": "1.0.0",
+    "description": "PWA para seguimiento de rutinas de gimnasio",
+    "main": "server/server.js",
+    "scripts": {
+        "dev": "nodemon server/server.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^4.22.1",
+        "pg": "^8.20.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.14"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
