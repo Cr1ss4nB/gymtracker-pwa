@@ -137,3 +137,249 @@ body {
 .auth-link a:hover {
   text-decoration: underline;
 }
+
+/* LAYOUT */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #0f0f0f;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #1e1e1e;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-logo {
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 1rem;
+}
+
+.sidebar-logo-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #e94560, #f5a623);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.75rem;
+  flex: 1;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #888;
+  font-size: 0.9rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebar-item:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.sidebar-item.active {
+  background: rgba(233, 69, 96, 0.15);
+  color: #e94560;
+  font-weight: 500;
+}
+
+.sidebar-icon {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.75rem;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-top: 0.5rem;
+}
+
+.sidebar-logout:hover {
+  color: #e94560;
+}
+
+/* WELCOME */
+.welcome-card {
+  background: linear-gradient(135deg, #1e1e1e, #2a1a2e);
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.welcome-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-sub {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.welcome-date {
+  color: #555;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+/* STATS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-valor {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #e94560;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.stat-sub {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* CARD */
+.card {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* EJERCICIOS */
+.ejercicios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ejercicio-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #2a2a2a;
+  border-radius: 8px;
+}
+
+.ejercicio-nombre {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.ejercicio-series {
+  color: #e94560;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn-iniciar {
+  background: linear-gradient(90deg, #e94560, #f5a623);
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-iniciar:hover {
+  opacity: 0.9;
+}
+
+/* SEMANA */
+.semana-grid {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dia-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.dia-label {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.dia-check {
+  font-size: 1.25rem;
+}

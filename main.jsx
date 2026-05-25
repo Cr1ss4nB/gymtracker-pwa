@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import Dashboard from './pages/dashboard/Dashboard'
 import './styles/global.css'
 
 if ('serviceWorker' in navigator) {
@@ -13,9 +14,8 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/login" />
+const ProtectedRoute = ({ children }) => {
+  return localStorage.getItem('token') ? children : <Navigate to="/login" />
 }
 
 createRoot(document.getElementById('root')).render(
@@ -25,10 +25,11 @@ createRoot(document.getElementById('root')).render(
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={
-          <PrivateRoute>
-            <div>Dashboard próximamente</div>
-          </PrivateRoute>
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
         } />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
