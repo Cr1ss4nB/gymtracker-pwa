@@ -42,7 +42,7 @@ const Dashboard = () => {
         <div className="welcome-card">
           <div>
             <h1 className="welcome-title">
-              Hola {user.name || 'Usuario'}, hoy es {nombreDia} 💪
+              Hola {user.name || 'Usuario'}, hoy es {nombreDia}
             </h1>
             <p className="welcome-sub">Llevas 5 días de racha — ¡sigue así!</p>
           </div>
@@ -73,7 +73,7 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-          <button className="btn-iniciar">▶ Iniciar entrenamiento</button>
+          <button className="btn-iniciar">Iniciar entrenamiento</button>
         </div>
 
         {/* Progreso semanal */}
@@ -84,7 +84,7 @@ const Dashboard = () => {
               <div key={i} className="dia-item">
                 <span className="dia-label">{d.dia}</span>
                 <span className={`dia-check ${d.hecho ? 'hecho' : ''}`}>
-                  {d.hecho ? '✅' : '⬜'}
+                  {d.hecho ? '✓' : '○'}
                 </span>
               </div>
             ))}

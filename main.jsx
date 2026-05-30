@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
+import Profile from './pages/profile/Profile'
 import './styles/global.css'
 
 if ('serviceWorker' in navigator) {
@@ -15,7 +16,8 @@ if ('serviceWorker' in navigator) {
 }
 
 const ProtectedRoute = ({ children }) => {
-  return localStorage.getItem('token') ? children : <Navigate to="/login" />
+  const token = localStorage.getItem('token')
+  return token ? children : <Navigate to="/login" />
 }
 
 createRoot(document.getElementById('root')).render(
@@ -24,6 +26,11 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
         <Route path="/" element={
           <ProtectedRoute>
             <Dashboard />

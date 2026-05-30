@@ -1,0 +1,134 @@
+.profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.profile-card {
+  background: var(--bg-card, #ffffff);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-card h1 {
+  color: var(--text-primary, #1a1a1a);
+  margin-bottom: 20px;
+}
+
+.profile-form,
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.form-group input {
+  padding: 12px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-save,
+.btn-edit {
+  flex: 1;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-save:hover,
+.btn-edit:hover {
+  background: #0056b3;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 12px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.info-group {
+  padding: 15px;
+  background: var(--bg-light, #f9f9f9);
+  border-radius: 8px;
+}
+
+.info-group label {
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.info-group p {
+  color: var(--text-secondary, #666);
+  margin: 0;
+  font-size: 16px;
+}
+
+.imc-group {
+  background: transparent;
+  padding: 0;
+}
+
+.imc-display {
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: white;
+}
+
+.imc-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.imc-status {
+  font-size: 14px;
+  margin: 5px 0 0 0;
+}
+
+.error-message {
+  padding: 12px;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.success-message {
+  padding: 12px;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}

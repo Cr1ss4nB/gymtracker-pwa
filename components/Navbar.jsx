@@ -1,13 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: '🏠' },
-  { path: '/rutinas', label: 'Rutinas', icon: '📋' },
-  { path: '/ejercicios', label: 'Ejercicios', icon: '💪' },
-  { path: '/sesion', label: 'Sesión', icon: '▶️' },
-  { path: '/progreso', label: 'Progreso', icon: '📈' },
-  { path: '/reportes', label: 'Reportes', icon: '📄' },
-  { path: '/perfil', label: 'Perfil', icon: '👤' },
+  { path: '/', label: 'Dashboard' },
+  { path: '/rutinas', label: 'Rutinas' },
+  { path: '/ejercicios', label: 'Ejercicios' },
+  { path: '/sesion', label: 'Sesión' },
+  { path: '/progreso', label: 'Progreso' },
+  { path: '/reportes', label: 'Reportes' },
+  { path: '/profile', label: 'Perfil' },
 ]
 
 const Navbar = () => {
@@ -33,14 +33,12 @@ const Navbar = () => {
             to={item.path}
             className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
           >
-            <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{item.label}</span>
           </Link>
         ))}
       </nav>
 
       <button className="sidebar-logout" onClick={handleLogout}>
-        <span className="sidebar-icon">🚪</span>
         <span className="sidebar-label">Cerrar sesión</span>
       </button>
     </aside>
