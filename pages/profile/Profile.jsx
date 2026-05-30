@@ -66,10 +66,14 @@ const Profile = () => {
       setProfileData(updated)
       setIsEditing(false)
       setSuccess('Perfil actualizado exitosamente')
-      setTimeout(() => setSuccess(''), 3000)
       
       // Actualizar localStorage
       localStorage.setItem('user', JSON.stringify({ ...user, age: updated.age }))
+      
+      // Redirigir al dashboard después de guardar
+      setTimeout(() => {
+        navigate('/')
+      }, 1500)
     } catch (err) {
       setError(err.message)
     }
@@ -167,6 +171,7 @@ const Profile = () => {
                   <div className="imc-display" style={{ backgroundColor: imc.hex }}>
                     <p className="imc-value">{profileData.imc}</p>
                     <p className="imc-status">{imc.status}</p>
+                    <p className="imc-recommendation">{imc.recommendation}</p>
                   </div>
                 </div>
               </>

@@ -5,6 +5,7 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
 import Profile from './pages/profile/Profile'
+import Layout from './components/Layout'
 import './styles/global.css'
 
 if ('serviceWorker' in navigator) {
@@ -26,14 +27,18 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
         <Route path="/" element={
           <ProtectedRoute>
-            <Dashboard />
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/login" />} />

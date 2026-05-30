@@ -21,7 +21,7 @@ const Register = () => {
       const data = await register(form.name, form.email, form.password)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      navigate('/profile')
+      navigate('/login')
     } catch (err) {
       setError(err.message)
     } finally {
