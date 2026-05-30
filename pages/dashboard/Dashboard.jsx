@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
-
-const user = JSON.parse(localStorage.getItem('user') || '{}')
+import { useEffect, useState } from 'react'
+import { updateProfile } from '../../js/profile/profile.api'
+import './dashboard.css'
 
 const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const hoy = new Date()
@@ -34,17 +33,114 @@ const semana = [
 ]
 
 const Dashboard = () => {
-  const navigate = useNavigate()
+  const token = localStorage.getItem('token')
+  const [user, setUser] = useState({})
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [formData, setFormData] = useState({
+    dateOfBirth: '',
+    height: '',
+    weight: ''
+  })
   
   useEffect(() => {
-    // Si es primera vez (sin age), redirige a perfil
-    if (!user.age) {
-      navigate('/profile')
+    // Leer user desde localStorage (reactivo)
+    const userData = JSON.parse(localStorage.getItem('user') || '{}')
+    setUser(userData)
+    
+    // Si es primera vez (sin age), mostrar modal
+    if (!userData.age) {
+      setShowProfileModal(true)
     }
-  }, [navigate])
+  }, [])
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const updated = await updateProfile(token, formData)
+      
+      // Actualizar localStorage
+      const updatedUser = { ...user, age: updated.age }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      setUser(updatedUser)
+      
+      // Cerrar modal
+      setShowProfileModal(false)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
   
   return (
     <>
+      {/* Modal de perfil para primera vez */}
+      {showProfileModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Completa tu perfil</h2>
+            <p>Necesitamos algunos datos para personalizar tu experiencia</p>
+            
+            {error && <div className="error-message">{error}</div>}
+            
+            <form onSubmit={handleProfileSubmit} className="modal-form">
+              <div className="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Altura (cm)</label>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  onChange={handleFormChange}
+                  placeholder="170"
+                  min="140"
+                  max="220"
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Peso (kg)</label>
+                <input
+                  type="number"
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleFormChange}
+                  placeholder="70"
+                  min="30"
+                  max="300"
+                  required
+                />
+              </div>
+              
+              <button type="submit" className="modal-btn" disabled={loading}>
+                {loading ? 'Guardando...' : 'Completar perfil'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Bienvenida */}
       <div className="welcome-card">
         <div>
