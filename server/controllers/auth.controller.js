@@ -5,13 +5,9 @@ const supabase = require('../config/db')
 const register = async (req, res) => {
   const { name, email, password } = req.body
 
-  console.log('1. Body recibido:', req.body)
-
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios' })
   }
-
-  console.log('2. Buscando si el email existe...')
 
   const { data: existing } = await supabase
     .from('users')
@@ -19,26 +15,19 @@ const register = async (req, res) => {
     .eq('email', email)
     .single()
 
-  console.log('3. Resultado búsqueda:', existing)
-
   if (existing) {
     return res.status(400).json({ error: 'El email ya está registrado' })
   }
 
-  console.log('4. Hasheando contraseña...')
   const hashedPassword = await bcrypt.hash(password, 10)
 
-  console.log('5. Insertando usuario...')
   const { data, error } = await supabase
     .from('users')
     .insert({ name, email, password: hashedPassword })
-    .select('id, name, email')
+    .select('id, name, email, age')
     .single()
-
-  console.log('6. Resultado insert:', data, error)
   
   if (error) {
-    console.log('Error Supabase:', error)
     return res.status(500).json({ error: error.message })
   }
 
@@ -60,7 +49,7 @@ const login = async (req, res) => {
 
   const { data: user } = await supabase
     .from('users')
-    .select('*')
+    .select('id, name, email, password, age, height, weight, imc')
     .eq('email', email)
     .single()
 
