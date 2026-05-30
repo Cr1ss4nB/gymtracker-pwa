@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { updateProfile, getProfile } from '../../js/profile/profile.api'
 import { calculateIMC, getIMCStatus } from '../../js/utils/imc'
 import './profile.css'
 
 const Profile = () => {
-  const navigate = useNavigate()
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   
@@ -70,10 +68,8 @@ const Profile = () => {
       // Actualizar localStorage
       localStorage.setItem('user', JSON.stringify({ ...user, age: updated.age }))
       
-      // Redirigir al dashboard después de guardar
-      setTimeout(() => {
-        navigate('/')
-      }, 1500)
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err.message)
     }

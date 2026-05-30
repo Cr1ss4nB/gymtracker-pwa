@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -34,6 +35,13 @@ const semana = [
 
 const Dashboard = () => {
   const navigate = useNavigate()
+  
+  useEffect(() => {
+    // Si es primera vez (sin age), redirige a perfil
+    if (!user.age) {
+      navigate('/profile')
+    }
+  }, [navigate])
   
   return (
     <>

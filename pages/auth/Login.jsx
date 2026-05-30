@@ -21,8 +21,8 @@ const Login = () => {
       const data = await login(form.email, form.password)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      // Si no tiene edad configurada, redirige al perfil
-      navigate(data.user.age ? '/' : '/profile')
+      // Redirige a dashboard
+      navigate('/dashboard')
     } catch (err) {
       setError(err.message)
     } finally {

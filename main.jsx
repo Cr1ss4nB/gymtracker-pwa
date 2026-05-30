@@ -27,7 +27,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={
+        <Route path="/dashboard" element={
           <ProtectedRoute>
             <Layout>
               <Dashboard />
@@ -41,6 +41,7 @@ createRoot(document.getElementById('root')).render(
             </Layout>
           </ProtectedRoute>
         } />
+        <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
