@@ -1,16 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const { verifyToken } = require('../middleware/auth.middleware')
+const { getExercises, getExerciseById } = require('../controllers/exercises.controller')
 
-// Los controllers se implementan en la rama feature/ejercicios
-// Por ahora responden 200 para que el servidor compile sin errores
+// GET /api/exercises — catálogo completo con filtros opcionales
+router.get('/', verifyToken, getExercises)
 
-router.get('/', verifyToken, (req, res) => {
-    res.json({ data: [], message: 'Módulo ejercicios en construcción' })
-})
-
-router.get('/:id', verifyToken, (req, res) => {
-    res.json({ data: null, message: 'Módulo ejercicios en construcción' })
-})
+// GET /api/exercises/:id — detalle de un ejercicio
+router.get('/:id', verifyToken, getExerciseById)
 
 module.exports = router

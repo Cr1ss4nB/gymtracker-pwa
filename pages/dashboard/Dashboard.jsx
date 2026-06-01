@@ -9,6 +9,7 @@ const fecha = hoy.toLocaleDateString('es-CO', {
   weekday: 'long', day: 'numeric', month: 'long'
 })
 
+// Datos estáticos temporales — se reemplazarán con datos reales en fase sesiones
 const stats = [
   { valor: '3', label: 'Sesiones', sub: 'esta semana' },
   { valor: '45min', label: 'Hoy', sub: 'entrenado' },
@@ -17,7 +18,7 @@ const stats = [
 ]
 
 const ejerciciosHoy = [
-  { nombre: 'Sentadilla', series: 4, reps: 12 },
+  { nombre: 'Sentadilla con barra', series: 4, reps: 12 },
   { nombre: 'Peso muerto', series: 3, reps: 8 },
   { nombre: 'Prensa', series: 4, reps: 10 },
 ]
@@ -32,6 +33,16 @@ const semana = [
   { dia: 'D', hecho: false },
 ]
 
+// Verifica si el perfil físico está completo
+const isProfileComplete = (userData) => {
+  return (
+    userData &&
+    userData.age != null && userData.age > 0 &&
+    userData.height != null && userData.height > 0 &&
+    userData.weight != null && userData.weight > 0
+  )
+}
+
 const Dashboard = () => {
   const token = localStorage.getItem('token')
   const [user, setUser] = useState({})
@@ -43,14 +54,15 @@ const Dashboard = () => {
     height: '',
     weight: ''
   })
-  
+
   useEffect(() => {
-    // Leer user desde localStorage (reactivo)
+    // Leer datos del usuario desde localStorage
     const userData = JSON.parse(localStorage.getItem('user') || '{}')
     setUser(userData)
-    
-    // Si es primera vez (sin age), mostrar modal
-    if (!userData.age) {
+
+    // Mostrar modal SOLO si el perfil físico no está completo
+    // Un perfil se considera incompleto si falta age, height o weight
+    if (!isProfileComplete(userData)) {
       setShowProfileModal(true)
     }
   }, [])
@@ -67,13 +79,18 @@ const Dashboard = () => {
 
     try {
       const updated = await updateProfile(token, formData)
-      
-      // Actualizar localStorage
-      const updatedUser = { ...user, age: updated.age }
+
+      // Actualizar localStorage con perfil completo para no volver a mostrar modal
+      const updatedUser = {
+        ...user,
+        age: updated.age,
+        height: updated.height,
+        weight: updated.weight,
+        imc: updated.imc
+      }
       localStorage.setItem('user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
-      // Cerrar modal
+
       setShowProfileModal(false)
     } catch (err) {
       setError(err.message)
@@ -81,18 +98,18 @@ const Dashboard = () => {
       setLoading(false)
     }
   }
-  
+
   return (
     <>
-      {/* Modal de perfil para primera vez */}
+      {/* Modal de onboarding — solo aparece si perfil físico incompleto */}
       {showProfileModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>Completa tu perfil</h2>
             <p>Necesitamos algunos datos para personalizar tu experiencia</p>
-            
+
             {error && <div className="error-message">{error}</div>}
-            
+
             <form onSubmit={handleProfileSubmit} className="modal-form">
               <div className="form-group">
                 <label>Fecha de Nacimiento</label>
@@ -104,7 +121,7 @@ const Dashboard = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label>Altura (cm)</label>
                 <input
@@ -118,7 +135,7 @@ const Dashboard = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
                 <label>Peso (kg)</label>
                 <input
@@ -132,7 +149,7 @@ const Dashboard = () => {
                   required
                 />
               </div>
-              
+
               <button type="submit" className="modal-btn" disabled={loading}>
                 {loading ? 'Guardando...' : 'Completar perfil'}
               </button>

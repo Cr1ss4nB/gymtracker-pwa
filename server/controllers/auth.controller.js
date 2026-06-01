@@ -24,9 +24,9 @@ const register = async (req, res) => {
   const { data, error } = await supabase
     .from('users')
     .insert({ name, email, password: hashedPassword })
-    .select('id, name, email, age')
+    .select('id, name, email, age, height, weight, imc')
     .single()
-  
+
   if (error) {
     return res.status(500).json({ error: error.message })
   }
@@ -37,7 +37,19 @@ const register = async (req, res) => {
     { expiresIn: '7d' }
   )
 
-  res.status(201).json({ token, user: data })
+  // Devolver user completo para que el frontend pueda evaluar si el perfil está completo
+  res.status(201).json({
+    token,
+    user: {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      age: data.age,
+      height: data.height,
+      weight: data.weight,
+      imc: data.imc
+    }
+  })
 }
 
 const login = async (req, res) => {
@@ -69,7 +81,18 @@ const login = async (req, res) => {
     { expiresIn: '7d' }
   )
 
-  res.json({ token, user: { id: user.id, name: user.name, email: user.email } })
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      age: user.age,
+      height: user.height,
+      weight: user.weight,
+      imc: user.imc
+    }
+  })
 }
 
 module.exports = { register, login }
