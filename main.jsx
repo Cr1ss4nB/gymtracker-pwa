@@ -5,6 +5,9 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
 import Profile from './pages/profile/Profile'
+import Exercises from './pages/exercises/Exercises'
+import Routines from './pages/routines/Routines'
+import Progress from './pages/progress/Progress'
 import Layout from './components/Layout'
 import './styles/global.css'
 
@@ -25,8 +28,11 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
+        {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Rutas protegidas */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Layout>
@@ -34,6 +40,31 @@ createRoot(document.getElementById('root')).render(
             </Layout>
           </ProtectedRoute>
         } />
+
+        <Route path="/ejercicios" element={
+          <ProtectedRoute>
+            <Layout>
+              <Exercises />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/rutinas" element={
+          <ProtectedRoute>
+            <Layout>
+              <Routines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/progreso" element={
+          <ProtectedRoute>
+            <Layout>
+              <Progress />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
         <Route path="/profile" element={
           <ProtectedRoute>
             <Layout>
@@ -41,6 +72,8 @@ createRoot(document.getElementById('root')).render(
             </Layout>
           </ProtectedRoute>
         } />
+
+        {/* Redirects */}
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
