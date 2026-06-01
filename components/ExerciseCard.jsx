@@ -16,6 +16,7 @@ const ExerciseCard = ({ exercise, onAdd = null }) => {
     'Avanzado':     '#e94560',
   }
 
+
   const muscleEmoji = {
     'Piernas':       '🦵',
     'Pecho':         '💪',
@@ -56,11 +57,9 @@ const ExerciseCard = ({ exercise, onAdd = null }) => {
         </span>
 
         {/* Indicador home/gym */}
-        {is_home && (
-          <span className="exercise-card__home-badge" title="Puede hacerse en casa">
-            🏠
+          <span className="exercise-card__home-badge" title={is_home ? "Puede hacerse en casa" : "Requiere gimnasio"} >
+            {is_home ? "🏠" : "🏋️"}
           </span>
-        )}
       </div>
 
       {/* Cuerpo de la card */}
