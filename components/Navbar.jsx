@@ -1,12 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 const navItems = [
-  { path: '/', label: 'Dashboard' },
+  { path: '/dashboard', label: 'Dashboard' },
   { path: '/rutinas', label: 'Rutinas' },
   { path: '/ejercicios', label: 'Ejercicios' },
-  { path: '/sesion', label: 'Sesión' },
   { path: '/progreso', label: 'Progreso' },
-  { path: '/reportes', label: 'Reportes' },
   { path: '/profile', label: 'Perfil' },
 ]
 
