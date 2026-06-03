@@ -1,23 +1,32 @@
 const supabase = require('../config/db')
 
+// Campos base de rutina
 const ROUTINE_SELECT = 'id, name, description, is_template, template_type, equipment_type, days_per_week, is_favorite, is_active, created_at, updated_at'
 
+// Ejercicios con datos completos del ejercicio padre
 const ROUTINE_EXERCISES_SELECT = `
   id, day_number, order_index, target_sets, target_reps, rest_seconds, notes,
   exercises (id, name, muscle_group, submuscles, equipment, difficulty, image_url, is_home)
 `
 
-// Desactiva todas las rutinas del usuario antes de activar una nueva.
-// Garantiza que solo haya una rutina activa por usuario.
-const deactivateAllUserRoutines = async (userId) => {
-  return supabase
+const buildByDay = (exercises = []) => {
+  const byDay = {}
+  for (let d = 1; d <= 7; d++) byDay[d] = []
+  for (const ex of exercises) {
+    if (byDay[ex.day_number]) byDay[ex.day_number].push(ex)
+  }
+  return byDay
+}
+
+// Garantiza que solo exista una rutina activa por usuario.
+const deactivateAllUserRoutines = (userId) =>
+  supabase
     .from('routines')
     .update({ is_active: false })
     .eq('user_id', userId)
     .eq('is_active', true)
-}
 
-// GET /api/routines — rutinas del usuario (excluye templates del sistema)
+// GET /api/routines
 const getRoutines = async (req, res) => {
   const userId = req.user.id
 
@@ -29,11 +38,10 @@ const getRoutines = async (req, res) => {
     .order('created_at', { ascending: false })
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data: data || [] })
 }
 
-// GET /api/routines/templates — templates del sistema disponibles
+// GET /api/routines/templates
 const getTemplates = async (req, res) => {
   const { data, error } = await supabase
     .from('routines')
@@ -43,11 +51,10 @@ const getTemplates = async (req, res) => {
     .order('days_per_week')
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data: data || [] })
 }
 
-// GET /api/routines/active — rutina activa del usuario con ejercicios agrupados por día
+// GET /api/routines/active 
 const getActiveRoutine = async (req, res) => {
   const userId = req.user.id
 
@@ -59,35 +66,25 @@ const getActiveRoutine = async (req, res) => {
     .single()
 
   if (routineError) {
-    // PGRST116 = no rows found — usuario sin rutina activa, no es un error
-    if (routineError.code === 'PGRST116') {
-      return res.json({ data: null })
-    }
+    if (routineError.code === 'PGRST116') return res.json({ data: null })
     return res.status(500).json({ error: routineError.message })
   }
 
   if (!routine) return res.json({ data: null })
 
-  // Traer ejercicios de la rutina activa ordenados
-  const { data: exercises, error: exercisesError } = await supabase
+  const { data: exercises, error: exError } = await supabase
     .from('routine_exercises')
     .select(ROUTINE_EXERCISES_SELECT)
     .eq('routine_id', routine.id)
     .order('day_number')
     .order('order_index')
 
-  if (exercisesError) return res.status(500).json({ error: exercisesError.message })
+  if (exError) return res.status(500).json({ error: exError.message })
 
-  const byDay = {}
-  for (let d = 1; d <= 7; d++) byDay[d] = []
-  for (const ex of exercises || []) {
-    if (byDay[ex.day_number]) byDay[ex.day_number].push(ex)
-  }
-
-  res.json({ data: { ...routine, exercises_by_day: byDay } })
+  res.json({ data: { ...routine, exercises_by_day: buildByDay(exercises) } })
 }
 
-// GET /api/routines/:id — detalle de una rutina con ejercicios
+// GET /api/routines/:id 
 const getRoutineById = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -99,8 +96,6 @@ const getRoutineById = async (req, res) => {
     .single()
 
   if (error || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-
-  // Solo el dueño puede ver sus rutinas; templates son visibles para todos
   if (!routine.is_template && routine.user_id !== userId) {
     return res.status(403).json({ error: 'Sin permiso' })
   }
@@ -114,13 +109,13 @@ const getRoutineById = async (req, res) => {
 
   if (exError) return res.status(500).json({ error: exError.message })
 
-  res.json({ data: { ...routine, exercises: exercises || [] } })
+  res.json({ data: { ...routine, exercises: exercises || [], exercises_by_day: buildByDay(exercises) } })
 }
 
-// POST /api/routines — crear rutina vacía manual
+// POST /api/routines
 const createRoutine = async (req, res) => {
   const userId = req.user.id
-  const { name, description, days_per_week } = req.body
+  const { name, description } = req.body
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'El nombre es obligatorio' })
@@ -133,22 +128,21 @@ const createRoutine = async (req, res) => {
       name: name.trim(),
       description: description || '',
       is_template: false,
-      days_per_week: days_per_week || 3,
+      days_per_week: null,   // flexible: se infiere de routine_exercises
       is_active: false
     })
     .select(ROUTINE_SELECT)
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.status(201).json({ data })
 }
 
-// PUT /api/routines/:id — actualizar metadatos de una rutina
+// PUT /api/routines/:id
 const updateRoutine = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
-  const { name, description, days_per_week } = req.body
+  const { name, description } = req.body
 
   const { data: existing, error: fetchError } = await supabase
     .from('routines')
@@ -157,14 +151,12 @@ const updateRoutine = async (req, res) => {
     .single()
 
   if (fetchError || !existing) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (existing.is_template) return res.status(403).json({ error: 'No se pueden editar templates originales' })
+  if (existing.is_template) return res.status(403).json({ error: 'No se pueden editar templates' })
   if (existing.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
-  const updates = {}
+  const updates = { updated_at: new Date().toISOString() }
   if (name) updates.name = name.trim()
   if (description !== undefined) updates.description = description
-  if (days_per_week) updates.days_per_week = days_per_week
-  updates.updated_at = new Date().toISOString()
 
   const { data, error } = await supabase
     .from('routines')
@@ -174,7 +166,6 @@ const updateRoutine = async (req, res) => {
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data })
 }
 
@@ -190,24 +181,23 @@ const deleteRoutine = async (req, res) => {
     .single()
 
   if (fetchError || !existing) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (existing.is_template) return res.status(403).json({ error: 'No se pueden eliminar templates originales' })
+  if (existing.is_template) return res.status(403).json({ error: 'No se pueden eliminar templates' })
   if (existing.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
+  // Eliminar ejercicios primero (FK sin CASCADE en esta BD)
   await supabase.from('routine_exercises').delete().eq('routine_id', id)
 
   const { error } = await supabase.from('routines').delete().eq('id', id)
-
   if (error) return res.status(500).json({ error: error.message })
 
   res.json({ message: 'Rutina eliminada' })
 }
 
-// POST /api/routines/templates/:templateId/use — clonar template para el usuario
+// POST /api/routines/templates/:templateId/use
 const useTemplate = async (req, res) => {
   const userId = req.user.id
   const { templateId } = req.params
 
-  // Verificar que la template existe
   const { data: template, error: tError } = await supabase
     .from('routines')
     .select(ROUTINE_SELECT)
@@ -217,7 +207,6 @@ const useTemplate = async (req, res) => {
 
   if (tError || !template) return res.status(404).json({ error: 'Template no encontrada' })
 
-  // Traer ejercicios de la template
   const { data: templateExercises, error: exError } = await supabase
     .from('routine_exercises')
     .select('exercise_id, day_number, order_index, target_sets, target_reps, rest_seconds, notes')
@@ -227,10 +216,8 @@ const useTemplate = async (req, res) => {
 
   if (exError) return res.status(500).json({ error: exError.message })
 
-  // Desactivar rutinas activas del usuario antes de crear la nueva
   await deactivateAllUserRoutines(userId)
 
-  // Crear la rutina clonada para el usuario
   const { data: newRoutine, error: createError } = await supabase
     .from('routines')
     .insert({
@@ -249,9 +236,8 @@ const useTemplate = async (req, res) => {
 
   if (createError) return res.status(500).json({ error: createError.message })
 
-  // Clonar los ejercicios de la template a la nueva rutina
   if (templateExercises && templateExercises.length > 0) {
-    const exercisesToInsert = templateExercises.map(ex => ({
+    const toInsert = templateExercises.map(ex => ({
       routine_id: newRoutine.id,
       exercise_id: ex.exercise_id,
       day_number: ex.day_number,
@@ -264,16 +250,14 @@ const useTemplate = async (req, res) => {
 
     const { error: insertError } = await supabase
       .from('routine_exercises')
-      .insert(exercisesToInsert)
+      .insert(toInsert)
 
     if (insertError) {
-      // Revertir: eliminar la rutina creada si falla la inserción de ejercicios
       await supabase.from('routines').delete().eq('id', newRoutine.id)
       return res.status(500).json({ error: 'Error al clonar ejercicios de la template' })
     }
   }
 
-  // Retornar la rutina nueva con ejercicios agrupados por día
   const { data: exercises } = await supabase
     .from('routine_exercises')
     .select(ROUTINE_EXERCISES_SELECT)
@@ -281,16 +265,10 @@ const useTemplate = async (req, res) => {
     .order('day_number')
     .order('order_index')
 
-  const byDay = {}
-  for (let d = 1; d <= 7; d++) byDay[d] = []
-  for (const ex of exercises || []) {
-    if (byDay[ex.day_number]) byDay[ex.day_number].push(ex)
-  }
-
-  res.status(201).json({ data: { ...newRoutine, exercises_by_day: byDay } })
+  res.status(201).json({ data: { ...newRoutine, exercises_by_day: buildByDay(exercises) } })
 }
 
-// PUT /api/routines/:id/activate — activar una rutina del usuario
+// PUT /api/routines/:id/activate
 const activateRoutine = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -315,7 +293,6 @@ const activateRoutine = async (req, res) => {
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data })
 }
 
@@ -331,7 +308,9 @@ const getRoutineExercises = async (req, res) => {
     .single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (!routine.is_template && routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
+  if (!routine.is_template && routine.user_id !== userId) {
+    return res.status(403).json({ error: 'Sin permiso' })
+  }
 
   const { data, error } = await supabase
     .from('routine_exercises')
@@ -341,11 +320,10 @@ const getRoutineExercises = async (req, res) => {
     .order('order_index')
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data: data || [] })
 }
 
-// POST /api/routines/:id/exercises — agregar ejercicio a una rutina
+// POST /api/routines/:id/exercises
 const addExercise = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -365,10 +343,9 @@ const addExercise = async (req, res) => {
     .single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates originales' })
+  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
   if (routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
-  // Calcular el siguiente order_index para este día
   const { data: existing } = await supabase
     .from('routine_exercises')
     .select('order_index')
@@ -395,11 +372,10 @@ const addExercise = async (req, res) => {
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.status(201).json({ data })
 }
 
-// PUT /api/routines/exercises/:routineExerciseId — editar series/reps/día
+// PUT /api/routines/exercises/:routineExerciseId
 const updateExercise = async (req, res) => {
   const userId = req.user.id
   const { routineExerciseId } = req.params
@@ -420,7 +396,7 @@ const updateExercise = async (req, res) => {
     .single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates originales' })
+  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
   if (routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
   const updates = {}
@@ -439,7 +415,6 @@ const updateExercise = async (req, res) => {
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ data })
 }
 
@@ -463,7 +438,7 @@ const removeExercise = async (req, res) => {
     .single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates originales' })
+  if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
   if (routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
   const { error } = await supabase
@@ -472,7 +447,6 @@ const removeExercise = async (req, res) => {
     .eq('id', routineExerciseId)
 
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ message: 'Ejercicio eliminado de la rutina' })
 }
 

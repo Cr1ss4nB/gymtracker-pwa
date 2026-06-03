@@ -16,6 +16,7 @@ export const useRoutine = () => {
 
   const token = localStorage.getItem('token')
 
+  // Carga la rutina activa al montar el componente que use el hook
   useEffect(() => {
     fetchActiveRoutine()
   }, [fetchActiveRoutine])
@@ -24,17 +25,16 @@ export const useRoutine = () => {
     setActionLoading(true)
     setActionError('')
     try {
-      const result = await fn()
-      return result
+      return await fn()
     } catch (err) {
-      setActionError(err.message)
+      setActionError(err.message || 'Error inesperado')
       throw err
     } finally {
       setActionLoading(false)
     }
   }, [])
 
-  // Agrega ejercicio al día indicado y actualiza el contexto localmente
+  // Agregar ejercicio
   const handleAddExercise = useCallback(async (exerciseId, dayNumber, opts = {}) => {
     return handleAction(async () => {
       const res = await addExercise(token, routine.id, {
@@ -45,58 +45,51 @@ export const useRoutine = () => {
         rest_seconds: opts.rest_seconds || 90
       })
 
-      // Actualizar el estado local sin refetch completo
+      // Actualizar estado local sin refetch
       setRoutine(prev => {
         if (!prev) return prev
-        const updated = { ...prev }
-        updated.exercises_by_day = { ...prev.exercises_by_day }
-        updated.exercises_by_day[dayNumber] = [
-          ...(prev.exercises_by_day[dayNumber] || []),
-          res.data
-        ]
-        return updated
+        const byDay = { ...prev.exercises_by_day }
+        byDay[dayNumber] = [...(byDay[dayNumber] || []), res.data]
+        return { ...prev, exercises_by_day: byDay }
       })
       return res.data
     })
   }, [token, routine, handleAction, setRoutine])
 
-  // Actualiza series/reps de un routine_exercise
+  // Actualizar series/reps
   const handleUpdateExercise = useCallback(async (routineExerciseId, updates) => {
     return handleAction(async () => {
       const res = await updateExercise(token, routineExerciseId, updates)
 
       setRoutine(prev => {
         if (!prev) return prev
-        const updated = { ...prev }
-        updated.exercises_by_day = { ...prev.exercises_by_day }
-        for (const day in updated.exercises_by_day) {
-          updated.exercises_by_day[day] = updated.exercises_by_day[day].map(ex =>
+        const byDay = { ...prev.exercises_by_day }
+        for (const day in byDay) {
+          byDay[day] = byDay[day].map(ex =>
             ex.id === routineExerciseId ? res.data : ex
           )
         }
-        return updated
+        return { ...prev, exercises_by_day: byDay }
       })
       return res.data
     })
   }, [token, handleAction, setRoutine])
 
-  // Elimina ejercicio de la rutina
+  // Eliminar ejercicio
   const handleRemoveExercise = useCallback(async (routineExerciseId, dayNumber) => {
     return handleAction(async () => {
       await removeExercise(token, routineExerciseId)
 
       setRoutine(prev => {
         if (!prev) return prev
-        const updated = { ...prev }
-        updated.exercises_by_day = { ...prev.exercises_by_day }
-        updated.exercises_by_day[dayNumber] = (prev.exercises_by_day[dayNumber] || [])
-          .filter(ex => ex.id !== routineExerciseId)
-        return updated
+        const byDay = { ...prev.exercises_by_day }
+        byDay[dayNumber] = (byDay[dayNumber] || []).filter(ex => ex.id !== routineExerciseId)
+        return { ...prev, exercises_by_day: byDay }
       })
     })
   }, [token, handleAction, setRoutine])
 
-  // Elimina la rutina completa y limpia el contexto
+  // Eliminar rutina completa
   const handleDeleteRoutine = useCallback(async () => {
     if (!routine) return
     return handleAction(async () => {
@@ -105,16 +98,16 @@ export const useRoutine = () => {
     })
   }, [token, routine, handleAction, clearRoutine])
 
-  // Crea rutina manual vacía y la activa
-  const handleCreateManual = useCallback(async (name, daysPerWeek) => {
+  // Crear rutina manual y activarla
+  const handleCreateManual = useCallback(async (name) => {
     return handleAction(async () => {
-      const created = await createRoutine(token, { name, days_per_week: daysPerWeek })
+      const created = await createRoutine(token, { name })
       const activated = await activateRoutine(token, created.data.id)
-      // Construir exercises_by_day vacío para la nueva rutina
       const byDay = {}
       for (let d = 1; d <= 7; d++) byDay[d] = []
-      setRoutine({ ...activated.data, exercises_by_day: byDay })
-      return activated.data
+      const newRoutine = { ...activated.data, exercises_by_day: byDay }
+      setRoutine(newRoutine)
+      return newRoutine
     })
   }, [token, handleAction, setRoutine])
 
