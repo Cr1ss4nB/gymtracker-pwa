@@ -1,52 +1,46 @@
 const express = require('express')
 const router = express.Router()
 const { verifyToken } = require('../middleware/auth.middleware')
+const {
+    getRoutines,
+    getTemplates,
+    getActiveRoutine,
+    getRoutineById,
+    createRoutine,
+    updateRoutine,
+    deleteRoutine,
+    useTemplate,
+    activateRoutine,
+    getRoutineExercises,
+    addExercise,
+    updateExercise,
+    removeExercise
+} = require('../controllers/routines.controller')
 
-// Los controllers se implementan en la rama feature/rutinas
-// Por ahora responden 200 para que el servidor compile sin errores
+// Rutas con segmentos literales primero
 
-router.get('/', verifyToken, (req, res) => {
-    res.json({ data: [], message: 'Módulo rutinas en construcción' })
-})
+router.get('/templates', verifyToken, getTemplates)
+router.post('/templates/:templateId/use', verifyToken, useTemplate)
 
-router.get('/templates', verifyToken, (req, res) => {
-    res.json({ data: [], message: 'Módulo rutinas en construcción' })
-})
+router.get('/active', verifyToken, getActiveRoutine)
 
-router.get('/favorites', verifyToken, (req, res) => {
-    res.json({ data: [], message: 'Módulo rutinas en construcción' })
-})
+router.get('/favorites', verifyToken, getRoutines)
 
-router.post('/', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
+// Operaciones sobre un routine_exercise por su propio ID (sin :routineId en la ruta)
+// También van antes de /:id para evitar colisión
+router.put('/exercises/:routineExerciseId', verifyToken, updateExercise)
+router.delete('/exercises/:routineExerciseId', verifyToken, removeExercise)
 
-router.put('/:id', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
+// Rutas de colección
+router.get('/', verifyToken, getRoutines)
+router.post('/', verifyToken, createRoutine)
 
-router.delete('/:id', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
-
-router.get('/:id/exercises', verifyToken, (req, res) => {
-    res.json({ data: [], message: 'Módulo rutinas en construcción' })
-})
-
-router.post('/:id/exercises', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
-
-router.put('/exercises/:routineExerciseId', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
-
-router.delete('/exercises/:routineExerciseId', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
-
-router.post('/:id/favorite', verifyToken, (req, res) => {
-    res.status(501).json({ message: 'Módulo rutinas en construcción' })
-})
+// Rutas con :id dinámico AL FINAL
+router.get('/:id', verifyToken, getRoutineById)
+router.put('/:id', verifyToken, updateRoutine)
+router.delete('/:id', verifyToken, deleteRoutine)
+router.put('/:id/activate', verifyToken, activateRoutine)
+router.get('/:id/exercises', verifyToken, getRoutineExercises)
+router.post('/:id/exercises', verifyToken, addExercise)
 
 module.exports = router

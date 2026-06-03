@@ -9,6 +9,7 @@ import Exercises from './pages/exercises/Exercises'
 import Routines from './pages/routines/Routines'
 import Progress from './pages/progress/Progress'
 import Layout from './components/Layout'
+import { RoutineProvider } from './contexts/RoutineContext'
 import './styles/global.css'
 
 if ('serviceWorker' in navigator) {
@@ -27,56 +28,35 @@ const ProtectedRoute = ({ children }) => {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        {/* Rutas públicas */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <RoutineProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Rutas protegidas */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>
+          } />
 
-        <Route path="/ejercicios" element={
-          <ProtectedRoute>
-            <Layout>
-              <Exercises />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/ejercicios" element={
+            <ProtectedRoute><Layout><Exercises /></Layout></ProtectedRoute>
+          } />
 
-        <Route path="/rutinas" element={
-          <ProtectedRoute>
-            <Layout>
-              <Routines />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/rutinas" element={
+            <ProtectedRoute><Layout><Routines /></Layout></ProtectedRoute>
+          } />
 
-        <Route path="/progreso" element={
-          <ProtectedRoute>
-            <Layout>
-              <Progress />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/progreso" element={
+            <ProtectedRoute><Layout><Progress /></Layout></ProtectedRoute>
+          } />
 
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Layout>
-              <Profile />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/profile" element={
+            <ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>
+          } />
 
-        {/* Redirects */}
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </RoutineProvider>
     </BrowserRouter>
   </StrictMode>
 )
