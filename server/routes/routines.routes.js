@@ -17,7 +17,7 @@ const {
     removeExercise
 } = require('../controllers/routines.controller')
 
-// Rutas con segmentos literales PRIMERO
+// Rutas con segmentos literales primero
 
 router.get('/templates', verifyToken, getTemplates)
 router.post('/templates/:templateId/use', verifyToken, useTemplate)
@@ -26,6 +26,8 @@ router.get('/active', verifyToken, getActiveRoutine)
 
 router.get('/favorites', verifyToken, getRoutines)
 
+// Operaciones sobre un routine_exercise por su propio ID (sin :routineId en la ruta)
+// También van antes de /:id para evitar colisión
 router.put('/exercises/:routineExerciseId', verifyToken, updateExercise)
 router.delete('/exercises/:routineExerciseId', verifyToken, removeExercise)
 

@@ -28,6 +28,7 @@ const ProtectedRoute = ({ children }) => {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+<<<<<<< HEAD
       <RoutineProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -57,6 +58,58 @@ createRoot(document.getElementById('root')).render(
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </RoutineProvider>
+=======
+      <Routes>
+        {/* Rutas públicas */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Rutas protegidas */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/ejercicios" element={
+          <ProtectedRoute>
+            <Layout>
+              <Exercises />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/rutinas" element={
+          <ProtectedRoute>
+            <Layout>
+              <Routines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/progreso" element={
+          <ProtectedRoute>
+            <Layout>
+              <Progress />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* Redirects */}
+        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+>>>>>>> 61a6ca372b1746c7c250cc38b5722e7764e0509a
     </BrowserRouter>
   </StrictMode>
 )
