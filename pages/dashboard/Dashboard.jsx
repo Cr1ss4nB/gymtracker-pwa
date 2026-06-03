@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { updateProfile } from '../../js/profile/profile.api'
 import './dashboard.css'
 
-const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const hoy = new Date()
 const nombreDia = dias[hoy.getDay()]
 const fecha = hoy.toLocaleDateString('es-CO', {
