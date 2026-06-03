@@ -11,7 +11,6 @@ body {
   min-height: 100vh;
 }
 
-/* AUTH */
 .auth-container {
   min-height: 100vh;
   display: flex;
@@ -138,10 +137,10 @@ body {
   text-decoration: underline;
 }
 
-/* LAYOUT */
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;      
+  overflow: hidden;      
   background: #0f0f0f;
 }
 
@@ -151,13 +150,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  overflow-y: auto;
+  overflow-y: auto; 
+  height: 100vh;
 }
 
-/* SIDEBAR */
 .sidebar {
   width: 240px;
-  min-height: 100vh;
+  height: 100vh; 
   background: #1e1e1e;
   border-right: 1px solid #2a2a2a;
   display: flex;
@@ -165,12 +164,15 @@ body {
   padding: 1.5rem 0;
   position: sticky;
   top: 0;
+  flex-shrink: 0;
+  overflow-y: auto; 
 }
 
 .sidebar-logo {
   padding: 0 1.5rem 1.5rem;
   border-bottom: 1px solid #2a2a2a;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .sidebar-logo-text {
@@ -230,14 +232,14 @@ body {
   font-size: 0.9rem;
   cursor: pointer;
   transition: color 0.2s;
-  margin-top: 0.5rem;
+  flex-shrink: 0; 
+  margin-top: auto;
 }
 
 .sidebar-logout:hover {
   color: #e94560;
 }
 
-/* WELCOME */
 .welcome-card {
   background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(245, 166, 35, 0.1) 100%);
   border: 1px solid rgba(233, 69, 96, 0.2);
@@ -270,7 +272,6 @@ body {
   white-space: nowrap;
 }
 
-/* STATS */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -314,7 +315,6 @@ body {
   color: #666;
 }
 
-/* CARD */
 .card {
   background: linear-gradient(135deg, #1e1e1e 0%, #2a1a2e 100%);
   border: 1px solid rgba(233, 69, 96, 0.1);
@@ -338,7 +338,6 @@ body {
   margin: 0;
 }
 
-/* EJERCICIOS */
 .ejercicios-list {
   display: flex;
   flex-direction: column;
@@ -396,7 +395,6 @@ body {
   box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
 }
 
-/* SEMANA */
 .semana-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -436,114 +434,6 @@ body {
 
 .dia-item:hover .dia-check {
   color: #e94560;
-}
-
-/* RESPONSIVE */
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 200px;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  
-  .sidebar {
-    width: 100%;
-    min-height: auto;
-    padding: 1rem;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 1rem;
-    align-items: center;
-    border-right: none;
-    border-bottom: 1px solid #2a2a2a;
-  }
-  
-  .sidebar-logo {
-    padding: 0;
-    border-bottom: none;
-    margin-bottom: 0;
-  }
-  
-  .sidebar-nav {
-    display: none;
-  }
-  
-  .sidebar-logout {
-    margin-top: 0;
-    padding: 0.5rem 1rem;
-  }
-  
-  .main-content {
-    padding: 1.5rem;
-  }
-  
-  .welcome-card {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .welcome-date {
-    text-align: center;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .semana-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .profile-card {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar {
-    grid-template-columns: 1fr auto;
-  }
-  
-  .main-content {
-    padding: 1rem;
-    gap: 1rem;
-  }
-  
-  .auth-card {
-    padding: 1.5rem;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .semana-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .card {
-    padding: 1.25rem;
-  }
-  
-  .profile-card {
-    padding: 1.25rem;
-  }
-  
-  .welcome-title {
-    font-size: 1.25rem;
-  }
-  
-  .imc-value {
-    font-size: 2rem;
-  }
 }
 
 .page-placeholder {
@@ -597,4 +487,106 @@ body {
   border-radius: 20px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .main-content {
+    height: auto;
+    overflow-y: visible;
+    padding: 1.5rem;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    position: static;
+    padding: 0.875rem 1rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid #2a2a2a;
+    overflow-y: visible;
+  }
+
+  .sidebar-logo {
+    padding: 0;
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .sidebar-nav {
+    display: none;
+  }
+
+  .sidebar-logout {
+    margin-top: 0;
+    padding: 0.5rem 1rem;
+  }
+
+  .welcome-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .welcome-date {
+    text-align: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .semana-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .main-content {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .semana-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .welcome-title {
+    font-size: 1.25rem;
+  }
 }

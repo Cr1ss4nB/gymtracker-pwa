@@ -7,6 +7,8 @@ const TYPE_LABELS = {
   UPPER_LOWER: 'Upper / Lower'
 }
 
+const TYPE_ORDER = ['FULL_BODY', 'PPL', 'UPPER_LOWER']
+
 const TemplateSelector = ({ token, onSelect, onClose }) => {
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,11 +18,13 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true)
+      setError('')
       try {
         const res = await getTemplates(token)
         setTemplates(res.data || [])
       } catch (err) {
-        setError(err.message)
+        setError(err.message || 'Error al cargar plantillas')
       } finally {
         setLoading(false)
       }
@@ -28,12 +32,14 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
     load()
   }, [token])
 
-  // Agrupar templates por tipo
-  const grouped = templates.reduce((acc, t) => {
-    if (!acc[t.template_type]) acc[t.template_type] = []
-    acc[t.template_type].push(t)
+  // Agrupar por template_type respetando TYPE_ORDER
+  const grouped = TYPE_ORDER.reduce((acc, type) => {
+    const items = templates.filter(t => t.template_type === type)
+    if (items.length > 0) acc[type] = items
     return acc
   }, {})
+
+  const hasGroups = Object.keys(grouped).length > 0
 
   const handleApply = async () => {
     if (!selected) return
@@ -43,7 +49,7 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
       const res = await useTemplate(token, selected.id)
       onSelect(res.data)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Error al aplicar plantilla')
       setApplying(false)
     }
   }
@@ -56,17 +62,31 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
           <button className="modal-box__close" onClick={onClose} type="button">✕</button>
         </div>
 
-        {error && <div className="modal-box__error">{error}</div>}
+        {error && <div className="modal-box__error">⚠️ {error}</div>}
 
         {loading ? (
-          <p className="modal-box__loading">Cargando plantillas...</p>
+          <div className="modal-box__loading">
+            <div className="template-selector__spinner" />
+            <span>Cargando plantillas...</span>
+          </div>
+        ) : !hasGroups ? (
+          <div className="template-selector__empty">
+            <p>No hay plantillas disponibles.</p>
+            <p className="template-selector__empty-hint">
+              Asegúrate de haber ejecutado el seed de templates en Supabase.
+            </p>
+          </div>
         ) : (
           <div className="template-selector__groups">
             {Object.entries(grouped).map(([type, items]) => (
               <div key={type} className="template-selector__group">
-                <h3 className="template-selector__group-title">{TYPE_LABELS[type] || type}</h3>
+                <h3 className="template-selector__group-title">
+                  {TYPE_LABELS[type] || type}
+                </h3>
                 <div className="template-selector__options">
-                  {items.map(t => (
+                  {items
+                    .sort((a, b) => (a.days_per_week || 0) - (b.days_per_week || 0))
+                    .map(t => (
                     <button
                       key={t.id}
                       type="button"
@@ -74,7 +94,9 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
                       onClick={() => setSelected(t)}
                     >
                       <span className="template-selector__option-name">{t.name}</span>
-                      <span className="template-selector__option-days">{t.days_per_week} días / semana</span>
+                      <span className="template-selector__option-days">
+                        {t.days_per_week} días / semana
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -84,14 +106,19 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
         )}
 
         <div className="modal-box__footer">
-          <button className="modal-box__btn modal-box__btn--cancel" onClick={onClose} type="button" disabled={applying}>
+          <button
+            className="modal-box__btn modal-box__btn--cancel"
+            onClick={onClose}
+            type="button"
+            disabled={applying}
+          >
             Cancelar
           </button>
           <button
             className="modal-box__btn modal-box__btn--primary"
             onClick={handleApply}
             type="button"
-            disabled={!selected || applying}
+            disabled={!selected || applying || loading}
           >
             {applying ? 'Aplicando...' : 'Usar plantilla'}
           </button>

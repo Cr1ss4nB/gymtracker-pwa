@@ -7,19 +7,19 @@ import ExercisePicker from '../../components/ExercisePicker'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import './routines.css'
 
-const CreateManualModal = ({ onConfirm, onClose }) => {
+// Modal de creación manual
+const CreateManualModal = ({ onConfirm, onClose, loading }) => {
   const [name, setName] = useState('')
-  const [days, setDays] = useState(3)
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!name.trim()) return
-    onConfirm(name.trim(), days)
+    onConfirm(name.trim())
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
+      <div className="modal-box modal-box--sm" onClick={e => e.stopPropagation()}>
         <div className="modal-box__header">
           <h2 className="modal-box__title">Nueva rutina</h2>
           <button className="modal-box__close" onClick={onClose} type="button">✕</button>
@@ -35,22 +35,25 @@ const CreateManualModal = ({ onConfirm, onClose }) => {
               required
               autoFocus
             />
-          </div>
-          <div className="modal-box__field">
-            <label>Días de entrenamiento por semana</label>
-            <select value={days} onChange={e => setDays(Number(e.target.value))}>
-              <option value={3}>3 días</option>
-              <option value={4}>4 días</option>
-              <option value={5}>5 días</option>
-              <option value={6}>6 días</option>
-            </select>
+            <span className="modal-box__field-hint">
+              Podrás agregar ejercicios a cada día desde el tablero.
+            </span>
           </div>
           <div className="modal-box__footer">
-            <button type="button" className="modal-box__btn modal-box__btn--cancel" onClick={onClose}>
+            <button
+              type="button"
+              className="modal-box__btn modal-box__btn--cancel"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancelar
             </button>
-            <button type="submit" className="modal-box__btn modal-box__btn--primary" disabled={!name.trim()}>
-              Crear rutina
+            <button
+              type="submit"
+              className="modal-box__btn modal-box__btn--primary"
+              disabled={!name.trim() || loading}
+            >
+              {loading ? 'Creando...' : 'Crear rutina'}
             </button>
           </div>
         </form>
@@ -59,6 +62,7 @@ const CreateManualModal = ({ onConfirm, onClose }) => {
   )
 }
 
+// Componente principal
 const Routines = () => {
   const token = localStorage.getItem('token')
 
@@ -82,18 +86,17 @@ const Routines = () => {
   const [pickerDay, setPickerDay] = useState(1)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  // Callback cuando el TemplateSelector aplica una template exitosamente
-  const handleTemplateSelected = (newRoutine) => {
+  const handleTemplateSelected = () => {
     setShowTemplateSelector(false)
     fetchActiveRoutine()
   }
 
-  const handleManualCreate = async (name, days) => {
+  const handleManualCreate = async (name) => {
     try {
-      await handleCreateManual(name, days)
+      await handleCreateManual(name)
       setShowCreateManual(false)
     } catch {
-      // actionError ya lo captura el hook
+      // actionError ya está en el hook
     }
   }
 
@@ -111,7 +114,12 @@ const Routines = () => {
     setShowDeleteConfirm(false)
   }
 
-  // ─── Loading ───────────────────────────────────────────────
+  // Días activos: derivados de routine_exercises
+  // Siempre mostramos los 7 días para máxima flexibilidad.
+  // Los días sin ejercicios aparecen como "Descanso".
+  const allDays = [1, 2, 3, 4, 5, 6, 7]
+
+  // Loading
   if (loading) {
     return (
       <div className="routines-page">
@@ -123,7 +131,7 @@ const Routines = () => {
     )
   }
 
-  // ─── Error ─────────────────────────────────────────────────
+  // ── Error ────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="routines-page">
@@ -141,7 +149,9 @@ const Routines = () => {
       <div className="routines-header">
         <div>
           <h1 className="routines-title">Rutinas</h1>
-          {routine && <p className="routines-subtitle">{routine.name}</p>}
+          {routine && (
+            <p className="routines-subtitle">{routine.name}</p>
+          )}
         </div>
         {routine && (
           <div className="routines-header__actions">
@@ -149,6 +159,7 @@ const Routines = () => {
               className="routines-btn routines-btn--danger"
               onClick={() => setShowDeleteConfirm(true)}
               type="button"
+              disabled={actionLoading}
             >
               Eliminar rutina
             </button>
@@ -156,7 +167,9 @@ const Routines = () => {
         )}
       </div>
 
-      {actionError && <div className="routines-action-error">⚠️ {actionError}</div>}
+      {actionError && (
+        <div className="routines-action-error">⚠️ {actionError}</div>
+      )}
 
       {/* Sin rutina activa */}
       {!routine ? (
@@ -165,9 +178,9 @@ const Routines = () => {
           onCreateManual={() => setShowCreateManual(true)}
         />
       ) : (
-        /* Rutina activa — calendario semanal */
+        /* Tablero semanal — 7 columnas siempre visibles */
         <div className="routines-board">
-          {[1, 2, 3, 4, 5, 6, 7].map(day => (
+          {allDays.map(day => (
             <RoutineDayColumn
               key={day}
               dayNumber={day}
@@ -191,6 +204,7 @@ const Routines = () => {
 
       {showCreateManual && (
         <CreateManualModal
+          loading={actionLoading}
           onConfirm={handleManualCreate}
           onClose={() => setShowCreateManual(false)}
         />
