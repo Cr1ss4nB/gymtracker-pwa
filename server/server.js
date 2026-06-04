@@ -18,7 +18,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/exercises', exercisesRoutes)
 app.use('/api/routines', routinesRoutes)
-app.use('/api/sessions', sessionsRoutes)    // reemplaza el stub anterior
+app.use('/api/sessions', sessionsRoutes) 
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })

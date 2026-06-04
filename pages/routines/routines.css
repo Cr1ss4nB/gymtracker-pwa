@@ -856,6 +856,7 @@
   border: 1px solid rgba(245, 166, 35, 0.35);
   color: #f5a623;
   transition: all 0.2s;
+  cursor: pointer;
 }
 .routines-btn--favorites:hover {
   background: rgba(245, 166, 35, 0.2);
@@ -878,8 +879,7 @@
   border-color: rgba(245, 166, 35, 0.5);
   background: rgba(245, 166, 35, 0.15);
 }
-.routines-btn--fav--on,
-.routines-btn--fav.routines-btn--fav-on {
+.routines-btn--fav-on {
   color: #f5a623;
   border-color: rgba(245, 166, 35, 0.5);
   background: rgba(245, 166, 35, 0.15);

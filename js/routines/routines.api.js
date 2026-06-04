@@ -1,12 +1,14 @@
 const API = '/api/routines'
 
-const authHeader = (token) => ({
-  Authorization: `Bearer ${token}`
+const getToken = () => localStorage.getItem('token')
+
+const authHeader = () => ({
+  'Authorization': `Bearer ${getToken()}`
 })
 
-const jsonHeaders = (token) => ({
+const jsonHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: `Bearer ${token}`
+  'Authorization': `Bearer ${getToken()}`
 })
 
 const handleResponse = async (res) => {
@@ -16,13 +18,8 @@ const handleResponse = async (res) => {
     window.location.href = '/login'
     throw new Error('Sesión expirada. Redirigiendo al login...')
   }
-
   const data = await res.json().catch(() => ({}))
-
-  if (!res.ok) {
-    throw new Error(data.error || `Error del servidor: ${res.status}`)
-  }
-
+  if (!res.ok) throw new Error(data.error || `Error del servidor: ${res.status}`)
   return data
 }
 
@@ -30,147 +27,118 @@ const safeFetch = async (url, options) => {
   try {
     return await fetch(url, options)
   } catch {
-    throw new Error(
-      'No se pudo conectar al servidor. Verifica que el backend esté corriendo.'
-    )
+    throw new Error('No se pudo conectar al servidor. Verifica que el backend esté corriendo.')
   }
 }
 
-export const getRoutines = async (token) => {
-  const res = await safeFetch(API, {
-    headers: authHeader(token)
-  })
+export const getRoutines = async () => {
+  const res = await safeFetch(API, { headers: authHeader() })
   return handleResponse(res)
 }
 
-export const getTemplates = async (token) => {
-  const res = await safeFetch(`${API}/templates`, {
-    headers: authHeader(token)
-  })
+export const getTemplates = async () => {
+  const res = await safeFetch(`${API}/templates`, { headers: authHeader() })
   return handleResponse(res)
 }
 
-export const getActiveRoutine = async (token) => {
-  const res = await safeFetch(`${API}/active`, {
-    headers: authHeader(token)
-  })
+export const getActiveRoutine = async () => {
+  const res = await safeFetch(`${API}/active`, { headers: authHeader() })
   return handleResponse(res)
 }
 
-export const getFavorites = async (token) => {
-  const res = await safeFetch(`${API}/favorites`, {
-    headers: authHeader(token)
-  })
+export const getRoutineById = async (id) => {
+  const res = await safeFetch(`${API}/${id}`, { headers: authHeader() })
   return handleResponse(res)
 }
 
-export const toggleFavorite = async (token, id) => {
-  const res = await safeFetch(`${API}/favorites/${id}/toggle`, {
-    method: 'PUT',
-    headers: authHeader(token)
-  })
-  return handleResponse(res)
-}
-
-export const getRoutineById = async (token, id) => {
-  const res = await safeFetch(`${API}/${id}`, {
-    headers: authHeader(token)
-  })
-  return handleResponse(res)
-}
-
-export const createRoutine = async (token, body) => {
+export const createRoutine = async ({ name, description }) => {
   const res = await safeFetch(API, {
     method: 'POST',
-    headers: jsonHeaders(token),
-    body: JSON.stringify(body)
+    headers: jsonHeaders(),
+    body: JSON.stringify({ name, description })
   })
   return handleResponse(res)
 }
 
-export const updateRoutine = async (token, id, body) => {
+export const updateRoutine = async (id, updates) => {
   const res = await safeFetch(`${API}/${id}`, {
     method: 'PUT',
-    headers: jsonHeaders(token),
-    body: JSON.stringify(body)
+    headers: jsonHeaders(),
+    body: JSON.stringify(updates)
   })
   return handleResponse(res)
 }
 
-export const deleteRoutine = async (token, id) => {
+export const deleteRoutine = async (id) => {
   const res = await safeFetch(`${API}/${id}`, {
     method: 'DELETE',
-    headers: authHeader(token)
+    headers: authHeader()
   })
   return handleResponse(res)
 }
 
-export const activateRoutine = async (token, id) => {
+export const activateRoutine = async (id) => {
   const res = await safeFetch(`${API}/${id}/activate`, {
     method: 'PUT',
-    headers: authHeader(token)
+    headers: authHeader()
   })
   return handleResponse(res)
 }
 
-export const useTemplate = async (token, templateId) => {
+export const useTemplate = async (templateId) => {
   const res = await safeFetch(`${API}/templates/${templateId}/use`, {
     method: 'POST',
-    headers: authHeader(token)
+    headers: authHeader()
   })
   return handleResponse(res)
 }
 
-export const getRoutineExercises = async (token, routineId) => {
-  const res = await safeFetch(`${API}/${routineId}/exercises`, {
-    headers: authHeader(token)
+export const getFavorites = async () => {
+  const res = await safeFetch(`${API}/favorites`, { headers: authHeader() })
+  return handleResponse(res)
+}
+
+export const toggleFavorite = async (id) => {
+  const res = await safeFetch(`${API}/favorites/${id}/toggle`, {
+    method: 'PUT',
+    headers: authHeader()
   })
   return handleResponse(res)
 }
 
-export const addExercise = async (
-  token,
-  routineId,
-  {
-    exercise_id,
-    day_number,
-    target_sets,
-    target_reps,
-    rest_seconds,
-    target_weight_kg,
-    notes
-  }
-) => {
+export const getRoutineExercises = async (routineId) => {
+  const res = await safeFetch(`${API}/${routineId}/exercises`, { headers: authHeader() })
+  return handleResponse(res)
+}
+
+export const addExercise = async (routineId, {
+  exercise_id, day_number, target_sets, target_reps,
+  rest_seconds, target_weight_kg, notes
+}) => {
   const res = await safeFetch(`${API}/${routineId}/exercises`, {
     method: 'POST',
-    headers: jsonHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify({
-      exercise_id,
-      day_number,
-      target_sets,
-      target_reps,
-      rest_seconds,
-      target_weight_kg: target_weight_kg ?? 0,
-      notes
+      exercise_id, day_number, target_sets, target_reps,
+      rest_seconds, target_weight_kg: target_weight_kg ?? 0, notes
     })
   })
-
   return handleResponse(res)
 }
 
-export const updateExercise = async (token, routineExerciseId, body) => {
+export const updateExercise = async (routineExerciseId, updates) => {
   const res = await safeFetch(`${API}/exercises/${routineExerciseId}`, {
     method: 'PUT',
-    headers: jsonHeaders(token),
-    body: JSON.stringify(body)
+    headers: jsonHeaders(),
+    body: JSON.stringify(updates)
   })
   return handleResponse(res)
 }
 
-export const removeExercise = async (token, routineExerciseId) => {
+export const removeExercise = async (routineExerciseId) => {
   const res = await safeFetch(`${API}/exercises/${routineExerciseId}`, {
     method: 'DELETE',
-    headers: authHeader(token)
+    headers: authHeader()
   })
   return handleResponse(res)
 }

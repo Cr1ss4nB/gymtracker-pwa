@@ -1,9 +1,7 @@
 const supabase = require('../config/db')
 
-// Campos base de rutina
 const ROUTINE_SELECT = 'id, name, description, is_template, template_type, equipment_type, days_per_week, is_favorite, is_active, created_at, updated_at'
 
-// Ejercicios con datos completos del ejercicio padre
 const ROUTINE_EXERCISES_SELECT = `
   id, day_number, order_index, target_sets, target_reps, rest_seconds, target_weight_kg, notes,
   exercises (id, name, muscle_group, submuscles, equipment, difficulty, image_url, is_home)
@@ -18,7 +16,6 @@ const buildByDay = (exercises = []) => {
   return byDay
 }
 
-// Garantiza que solo exista una rutina activa por usuario.
 const deactivateAllUserRoutines = (userId) =>
   supabase
     .from('routines')
@@ -27,6 +24,7 @@ const deactivateAllUserRoutines = (userId) =>
     .eq('is_active', true)
 
 // GET /api/routines
+
 const getRoutines = async (req, res) => {
   const userId = req.user.id
   const { data, error } = await supabase
@@ -40,6 +38,7 @@ const getRoutines = async (req, res) => {
 }
 
 // GET /api/routines/templates
+
 const getTemplates = async (req, res) => {
   const { data, error } = await supabase
     .from('routines')
@@ -52,18 +51,22 @@ const getTemplates = async (req, res) => {
 }
 
 // GET /api/routines/active
+
 const getActiveRoutine = async (req, res) => {
   const userId = req.user.id
+
   const { data: routine, error: routineError } = await supabase
     .from('routines')
     .select(ROUTINE_SELECT)
     .eq('user_id', userId)
     .eq('is_active', true)
     .single()
+
   if (routineError) {
     if (routineError.code === 'PGRST116') return res.json({ data: null })
     return res.status(500).json({ error: routineError.message })
   }
+
   if (!routine) return res.json({ data: null })
 
   const { data: exercises, error: exError } = await supabase
@@ -74,14 +77,13 @@ const getActiveRoutine = async (req, res) => {
     .order('order_index')
 
   if (exError) return res.status(500).json({ error: exError.message })
-
   res.json({ data: { ...routine, exercises_by_day: buildByDay(exercises) } })
 }
 
 // GET /api/routines/favorites
+
 const getFavorites = async (req, res) => {
   const userId = req.user.id
-
   const { data, error } = await supabase
     .from('routines')
     .select(ROUTINE_SELECT)
@@ -89,7 +91,6 @@ const getFavorites = async (req, res) => {
     .eq('is_template', false)
     .eq('is_favorite', true)
     .order('updated_at', { ascending: false })
-
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data: data || [] })
 }
@@ -99,36 +100,87 @@ const toggleFavorite = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
 
-  const { data: existing, error: fetchError } = await supabase
+  const { data: source, error: srcError } = await supabase
     .from('routines')
-    .select('id, user_id, is_template, is_favorite')
+    .select(ROUTINE_SELECT)
     .eq('id', id)
     .single()
 
-  if (fetchError || !existing) {
-    return res.status(404).json({ error: 'Rutina no encontrada' })
-  }
-  if (existing.is_template) {
-    return res.status(403).json({ error: 'No se pueden marcar templates como favoritas' })
-  }
-  if (existing.user_id !== userId) {
-    return res.status(403).json({ error: 'Sin permiso' })
+  if (srcError || !source) return res.status(404).json({ error: 'Rutina no encontrada' })
+  if (source.is_template) return res.status(403).json({ error: 'No se pueden marcar templates como favoritas' })
+  if (source.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
+
+  // CASO 1: La rutina origen YA tiene is_favorite=true → quitar favorito (solo flag)
+  if (source.is_favorite) {
+    const { data, error } = await supabase
+      .from('routines')
+      .update({ is_favorite: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(ROUTINE_SELECT)
+      .single()
+    if (error) return res.status(500).json({ error: error.message })
+    return res.json({ data, action: 'removed' })
   }
 
-  const newValue = !existing.is_favorite
+  // CASO 2: La rutina origen NO tiene is_favorite → clonar como snapshot independiente
+  const { data: sourceExercises, error: exError } = await supabase
+    .from('routine_exercises')
+    .select('exercise_id, day_number, order_index, target_sets, target_reps, rest_seconds, target_weight_kg, notes')
+    .eq('routine_id', id)
+    .order('day_number')
+    .order('order_index')
 
-  const { data, error } = await supabase
+  if (exError) return res.status(500).json({ error: exError.message })
+
+  const snapshotName = source.name.endsWith('★')
+    ? source.name
+    : `${source.name} ★`
+
+  const { data: snapshot, error: snapError } = await supabase
     .from('routines')
-    .update({ is_favorite: newValue, updated_at: new Date().toISOString() })
-    .eq('id', id)
+    .insert({
+      user_id: userId,
+      name: snapshotName,
+      description: source.description,
+      is_template: false,
+      template_type: source.template_type,
+      equipment_type: source.equipment_type,
+      days_per_week: source.days_per_week,
+      is_active: false,  
+      is_favorite: true
+    })
     .select(ROUTINE_SELECT)
     .single()
 
-  if (error) return res.status(500).json({ error: error.message })
-  res.json({ data })
+  if (snapError) return res.status(500).json({ error: snapError.message })
+
+  // Clonar ejercicios al snapshot
+  if (sourceExercises && sourceExercises.length > 0) {
+    const toInsert = sourceExercises.map(ex => ({
+      routine_id: snapshot.id,
+      exercise_id: ex.exercise_id,
+      day_number: ex.day_number,
+      order_index: ex.order_index,
+      target_sets: ex.target_sets,
+      target_reps: ex.target_reps,
+      rest_seconds: ex.rest_seconds,
+      target_weight_kg: ex.target_weight_kg || 0,
+      notes: ex.notes
+    }))
+    await supabase.from('routine_exercises').insert(toInsert)
+  }
+
+  // Marcar la rutina origen como "tiene favorito guardado"
+  await supabase
+    .from('routines')
+    .update({ is_favorite: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  res.status(201).json({ data: snapshot, action: 'saved', sourceId: id })
 }
 
 // GET /api/routines/:id
+
 const getRoutineById = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -140,9 +192,8 @@ const getRoutineById = async (req, res) => {
     .single()
 
   if (error || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (!routine.is_template && routine.user_id !== userId) {
+  if (!routine.is_template && routine.user_id !== userId)
     return res.status(403).json({ error: 'Sin permiso' })
-  }
 
   const { data: exercises, error: exError } = await supabase
     .from('routine_exercises')
@@ -152,18 +203,15 @@ const getRoutineById = async (req, res) => {
     .order('order_index')
 
   if (exError) return res.status(500).json({ error: exError.message })
-
   res.json({ data: { ...routine, exercises: exercises || [], exercises_by_day: buildByDay(exercises) } })
 }
 
 // POST /api/routines
+
 const createRoutine = async (req, res) => {
   const userId = req.user.id
   const { name, description } = req.body
-
-  if (!name || !name.trim()) {
-    return res.status(400).json({ error: 'El nombre es obligatorio' })
-  }
+  if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es obligatorio' })
 
   const { data, error } = await supabase
     .from('routines')
@@ -183,16 +231,14 @@ const createRoutine = async (req, res) => {
 }
 
 // PUT /api/routines/:id
+
 const updateRoutine = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
   const { name, description } = req.body
 
   const { data: existing, error: fetchError } = await supabase
-    .from('routines')
-    .select('id, user_id, is_template')
-    .eq('id', id)
-    .single()
+    .from('routines').select('id, user_id, is_template').eq('id', id).single()
 
   if (fetchError || !existing) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (existing.is_template) return res.status(403).json({ error: 'No se pueden editar templates' })
@@ -203,59 +249,47 @@ const updateRoutine = async (req, res) => {
   if (description !== undefined) updates.description = description
 
   const { data, error } = await supabase
-    .from('routines')
-    .update(updates)
-    .eq('id', id)
-    .select(ROUTINE_SELECT)
-    .single()
-
+    .from('routines').update(updates).eq('id', id).select(ROUTINE_SELECT).single()
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data })
 }
 
 // DELETE /api/routines/:id
+
 const deleteRoutine = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
 
   const { data: existing, error: fetchError } = await supabase
-    .from('routines')
-    .select('id, user_id, is_template')
-    .eq('id', id)
-    .single()
+    .from('routines').select('id, user_id, is_template').eq('id', id).single()
 
   if (fetchError || !existing) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (existing.is_template) return res.status(403).json({ error: 'No se pueden eliminar templates' })
   if (existing.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
   await supabase.from('routine_exercises').delete().eq('routine_id', id)
-
   const { error } = await supabase.from('routines').delete().eq('id', id)
   if (error) return res.status(500).json({ error: error.message })
-
   res.json({ message: 'Rutina eliminada' })
 }
 
 // POST /api/routines/templates/:templateId/use
+
 const useTemplate = async (req, res) => {
   const userId = req.user.id
   const { templateId } = req.params
 
   const { data: template, error: tError } = await supabase
-    .from('routines')
-    .select(ROUTINE_SELECT)
-    .eq('id', templateId)
-    .eq('is_template', true)
-    .single()
+    .from('routines').select(ROUTINE_SELECT)
+    .eq('id', templateId).eq('is_template', true).single()
 
   if (tError || !template) return res.status(404).json({ error: 'Template no encontrada' })
 
   const { data: templateExercises, error: exError } = await supabase
     .from('routine_exercises')
-    .select('exercise_id, day_number, order_index, target_sets, target_reps, rest_seconds, notes')
+    .select('exercise_id, day_number, order_index, target_sets, target_reps, rest_seconds, target_weight_kg, notes')
     .eq('routine_id', templateId)
-    .order('day_number')
-    .order('order_index')
+    .order('day_number').order('order_index')
 
   if (exError) return res.status(500).json({ error: exError.message })
 
@@ -274,8 +308,7 @@ const useTemplate = async (req, res) => {
       is_active: true,
       is_favorite: false
     })
-    .select(ROUTINE_SELECT)
-    .single()
+    .select(ROUTINE_SELECT).single()
 
   if (createError) return res.status(500).json({ error: createError.message })
 
@@ -291,11 +324,7 @@ const useTemplate = async (req, res) => {
       target_weight_kg: ex.target_weight_kg || 0,
       notes: ex.notes
     }))
-
-    const { error: insertError } = await supabase
-      .from('routine_exercises')
-      .insert(toInsert)
-
+    const { error: insertError } = await supabase.from('routine_exercises').insert(toInsert)
     if (insertError) {
       await supabase.from('routines').delete().eq('id', newRoutine.id)
       return res.status(500).json({ error: 'Error al clonar ejercicios de la template' })
@@ -303,25 +332,20 @@ const useTemplate = async (req, res) => {
   }
 
   const { data: exercises } = await supabase
-    .from('routine_exercises')
-    .select(ROUTINE_EXERCISES_SELECT)
-    .eq('routine_id', newRoutine.id)
-    .order('day_number')
-    .order('order_index')
+    .from('routine_exercises').select(ROUTINE_EXERCISES_SELECT)
+    .eq('routine_id', newRoutine.id).order('day_number').order('order_index')
 
   res.status(201).json({ data: { ...newRoutine, exercises_by_day: buildByDay(exercises) } })
 }
 
 // PUT /api/routines/:id/activate
+
 const activateRoutine = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
 
   const { data: existing, error: fetchError } = await supabase
-    .from('routines')
-    .select('id, user_id, is_template')
-    .eq('id', id)
-    .single()
+    .from('routines').select('id, user_id, is_template').eq('id', id).single()
 
   if (fetchError || !existing) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (existing.is_template) return res.status(403).json({ error: 'No se puede activar una template directamente' })
@@ -332,89 +356,68 @@ const activateRoutine = async (req, res) => {
   const { data, error } = await supabase
     .from('routines')
     .update({ is_active: true, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select(ROUTINE_SELECT)
-    .single()
+    .eq('id', id).select(ROUTINE_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data })
 }
 
 // GET /api/routines/:id/exercises
+
 const getRoutineExercises = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
 
   const { data: routine, error: rError } = await supabase
-    .from('routines')
-    .select('id, user_id, is_template')
-    .eq('id', id)
-    .single()
+    .from('routines').select('id, user_id, is_template').eq('id', id).single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
-  if (!routine.is_template && routine.user_id !== userId) {
+  if (!routine.is_template && routine.user_id !== userId)
     return res.status(403).json({ error: 'Sin permiso' })
-  }
 
   const { data, error } = await supabase
-    .from('routine_exercises')
-    .select(ROUTINE_EXERCISES_SELECT)
-    .eq('routine_id', id)
-    .order('day_number')
-    .order('order_index')
+    .from('routine_exercises').select(ROUTINE_EXERCISES_SELECT)
+    .eq('routine_id', id).order('day_number').order('order_index')
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data: data || [] })
 }
 
 // POST /api/routines/:id/exercises
+
 const addExercise = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
   const { exercise_id, day_number, target_sets, target_reps, rest_seconds, target_weight_kg, notes } = req.body
 
-  if (!exercise_id || !day_number) {
+  if (!exercise_id || !day_number)
     return res.status(400).json({ error: 'exercise_id y day_number son obligatorios' })
-  }
-  if (day_number < 1 || day_number > 7) {
+  if (day_number < 1 || day_number > 7)
     return res.status(400).json({ error: 'day_number debe estar entre 1 y 7' })
-  }
 
   const { data: routine, error: rError } = await supabase
-    .from('routines')
-    .select('id, user_id, is_template')
-    .eq('id', id)
-    .single()
+    .from('routines').select('id, user_id, is_template').eq('id', id).single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
   if (routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
   const { data: existing } = await supabase
-    .from('routine_exercises')
-    .select('order_index')
-    .eq('routine_id', id)
-    .eq('day_number', day_number)
-    .order('order_index', { ascending: false })
-    .limit(1)
+    .from('routine_exercises').select('order_index')
+    .eq('routine_id', id).eq('day_number', day_number)
+    .order('order_index', { ascending: false }).limit(1)
 
   const nextIndex = existing && existing.length > 0 ? existing[0].order_index + 1 : 0
 
   const { data, error } = await supabase
     .from('routine_exercises')
     .insert({
-      routine_id: id,
-      exercise_id,
-      day_number,
-      order_index: nextIndex,
-      target_sets: target_sets || 3,
-      target_reps: target_reps || 10,
-      rest_seconds: rest_seconds || 90,
-      target_weight_kg: target_weight_kg || 0,
+      routine_id: id, exercise_id, day_number, order_index: nextIndex,
+      target_sets: target_sets || 3, target_reps: target_reps || 10,
+      rest_seconds: rest_seconds || 90, target_weight_kg: target_weight_kg || 0,
       notes: notes || null
     })
-    .select(ROUTINE_EXERCISES_SELECT)
-    .single()
+    .select(ROUTINE_EXERCISES_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json({ data })
@@ -424,21 +427,15 @@ const addExercise = async (req, res) => {
 const updateExercise = async (req, res) => {
   const userId = req.user.id
   const { routineExerciseId } = req.params
-  const { target_sets, target_reps, rest_seconds, day_number, order_index, notes } = req.body
+  const { target_sets, target_reps, rest_seconds, target_weight_kg, day_number, order_index, notes } = req.body
 
   const { data: re, error: reError } = await supabase
-    .from('routine_exercises')
-    .select('id, routine_id')
-    .eq('id', routineExerciseId)
-    .single()
+    .from('routine_exercises').select('id, routine_id').eq('id', routineExerciseId).single()
 
   if (reError || !re) return res.status(404).json({ error: 'Entrada no encontrada' })
 
   const { data: routine, error: rError } = await supabase
-    .from('routines')
-    .select('user_id, is_template')
-    .eq('id', re.routine_id)
-    .single()
+    .from('routines').select('user_id, is_template').eq('id', re.routine_id).single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
@@ -454,11 +451,8 @@ const updateExercise = async (req, res) => {
   if (notes !== undefined) updates.notes = notes
 
   const { data, error } = await supabase
-    .from('routine_exercises')
-    .update(updates)
-    .eq('id', routineExerciseId)
-    .select(ROUTINE_EXERCISES_SELECT)
-    .single()
+    .from('routine_exercises').update(updates)
+    .eq('id', routineExerciseId).select(ROUTINE_EXERCISES_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data })
@@ -470,46 +464,25 @@ const removeExercise = async (req, res) => {
   const { routineExerciseId } = req.params
 
   const { data: re, error: reError } = await supabase
-    .from('routine_exercises')
-    .select('id, routine_id')
-    .eq('id', routineExerciseId)
-    .single()
+    .from('routine_exercises').select('id, routine_id').eq('id', routineExerciseId).single()
 
   if (reError || !re) return res.status(404).json({ error: 'Entrada no encontrada' })
 
   const { data: routine, error: rError } = await supabase
-    .from('routines')
-    .select('user_id, is_template')
-    .eq('id', re.routine_id)
-    .single()
+    .from('routines').select('user_id, is_template').eq('id', re.routine_id).single()
 
   if (rError || !routine) return res.status(404).json({ error: 'Rutina no encontrada' })
   if (routine.is_template) return res.status(403).json({ error: 'No se pueden modificar templates' })
   if (routine.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
-  const { error } = await supabase
-    .from('routine_exercises')
-    .delete()
-    .eq('id', routineExerciseId)
-
+  const { error } = await supabase.from('routine_exercises').delete().eq('id', routineExerciseId)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ message: 'Ejercicio eliminado de la rutina' })
 }
 
 module.exports = {
-  getRoutines,
-  getTemplates,
-  getActiveRoutine,
-  getFavorites,
-  toggleFavorite,
-  getRoutineById,
-  createRoutine,
-  updateRoutine,
-  deleteRoutine,
-  useTemplate,
-  activateRoutine,
-  getRoutineExercises,
-  addExercise,
-  updateExercise,
-  removeExercise
+  getRoutines, getTemplates, getActiveRoutine, getFavorites, toggleFavorite,
+  getRoutineById, createRoutine, updateRoutine, deleteRoutine,
+  useTemplate, activateRoutine,
+  getRoutineExercises, addExercise, updateExercise, removeExercise
 }
