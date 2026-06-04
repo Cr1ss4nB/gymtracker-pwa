@@ -842,3 +842,50 @@
   font-size: 0.78rem;
   color: #444;
 }
+
+.routines-btn--favorites {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  color: #f5a623;
+  transition: all 0.2s;
+}
+.routines-btn--favorites:hover {
+  background: rgba(245, 166, 35, 0.2);
+  border-color: rgba(245, 166, 35, 0.6);
+}
+
+.routines-btn--fav {
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  color: #666;
+  font-size: 1.1rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.routines-btn--fav:hover {
+  color: #f5a623;
+  border-color: rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.15);
+}
+.routines-btn--fav--on,
+.routines-btn--fav.routines-btn--fav-on {
+  color: #f5a623;
+  border-color: rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.15);
+  text-shadow: 0 0 6px rgba(245, 166, 35, 0.5);
+}
+.routines-btn--fav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

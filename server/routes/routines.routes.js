@@ -2,40 +2,45 @@ const express = require('express')
 const router = express.Router()
 const { verifyToken } = require('../middleware/auth.middleware')
 const {
-    getRoutines,
-    getTemplates,
-    getActiveRoutine,
-    getRoutineById,
-    createRoutine,
-    updateRoutine,
-    deleteRoutine,
-    useTemplate,
-    activateRoutine,
-    getRoutineExercises,
-    addExercise,
-    updateExercise,
-    removeExercise
+  getRoutines,
+  getTemplates,
+  getActiveRoutine,
+  getFavorites,
+  toggleFavorite,
+  getRoutineById,
+  createRoutine,
+  updateRoutine,
+  deleteRoutine,
+  useTemplate,
+  activateRoutine,
+  getRoutineExercises,
+  addExercise,
+  updateExercise,
+  removeExercise
 } = require('../controllers/routines.controller')
 
-// Rutas con segmentos literales primero
+// Rutas con segmentos literales — siempre ANTES de los dinámicos
 
+// Templates
 router.get('/templates', verifyToken, getTemplates)
 router.post('/templates/:templateId/use', verifyToken, useTemplate)
 
+// Rutina activa
 router.get('/active', verifyToken, getActiveRoutine)
 
-router.get('/favorites', verifyToken, getRoutines)
+// Favoritos
+router.get('/favorites', verifyToken, getFavorites)
+router.put('/favorites/:id/toggle', verifyToken, toggleFavorite)
 
-// Operaciones sobre un routine_exercise por su propio ID (sin :routineId en la ruta)
-// También van antes de /:id para evitar colisión
+// Operaciones sobre un routine_exercise por su propio ID
 router.put('/exercises/:routineExerciseId', verifyToken, updateExercise)
 router.delete('/exercises/:routineExerciseId', verifyToken, removeExercise)
 
-// Rutas de colección
+// Colección base
 router.get('/', verifyToken, getRoutines)
 router.post('/', verifyToken, createRoutine)
 
-// Rutas con :id dinámico AL FINAL
+// Rutas con :id dinámico — AL FINAL para no colisionar 
 router.get('/:id', verifyToken, getRoutineById)
 router.put('/:id', verifyToken, updateRoutine)
 router.delete('/:id', verifyToken, deleteRoutine)

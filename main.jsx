@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard'
 import Profile from './pages/profile/Profile'
 import Exercises from './pages/exercises/Exercises'
 import Routines from './pages/routines/Routines'
+import Favorites from './pages/routines/Favorites'
 import Progress from './pages/progress/Progress'
 import Layout from './components/Layout'
 import { RoutineProvider } from './contexts/RoutineContext'
@@ -39,6 +40,10 @@ createRoot(document.getElementById('root')).render(
 
           <Route path="/ejercicios" element={
             <ProtectedRoute><Layout><Exercises /></Layout></ProtectedRoute>
+          } />
+
+          <Route path="/rutinas/favoritos" element={
+            <ProtectedRoute><Layout><Favorites /></Layout></ProtectedRoute>
           } />
 
           <Route path="/rutinas" element={
