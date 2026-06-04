@@ -54,7 +54,7 @@ const getTemplates = async (req, res) => {
   res.json({ data: data || [] })
 }
 
-// GET /api/routines/active 
+// GET /api/routines/active
 const getActiveRoutine = async (req, res) => {
   const userId = req.user.id
 
@@ -84,7 +84,57 @@ const getActiveRoutine = async (req, res) => {
   res.json({ data: { ...routine, exercises_by_day: buildByDay(exercises) } })
 }
 
-// GET /api/routines/:id 
+// GET /api/routines/favorites
+const getFavorites = async (req, res) => {
+  const userId = req.user.id
+
+  const { data, error } = await supabase
+    .from('routines')
+    .select(ROUTINE_SELECT)
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('is_favorite', true)
+    .order('updated_at', { ascending: false })
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ data: data || [] })
+}
+
+// PUT /api/routines/favorites/:id/toggle
+const toggleFavorite = async (req, res) => {
+  const userId = req.user.id
+  const { id } = req.params
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('routines')
+    .select('id, user_id, is_template, is_favorite')
+    .eq('id', id)
+    .single()
+
+  if (fetchError || !existing) {
+    return res.status(404).json({ error: 'Rutina no encontrada' })
+  }
+  if (existing.is_template) {
+    return res.status(403).json({ error: 'No se pueden marcar templates como favoritas' })
+  }
+  if (existing.user_id !== userId) {
+    return res.status(403).json({ error: 'Sin permiso' })
+  }
+
+  const newValue = !existing.is_favorite
+
+  const { data, error } = await supabase
+    .from('routines')
+    .update({ is_favorite: newValue, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select(ROUTINE_SELECT)
+    .single()
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ data })
+}
+
+// GET /api/routines/:id
 const getRoutineById = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -128,7 +178,7 @@ const createRoutine = async (req, res) => {
       name: name.trim(),
       description: description || '',
       is_template: false,
-      days_per_week: null,   // flexible: se infiere de routine_exercises
+      days_per_week: null,
       is_active: false
     })
     .select(ROUTINE_SELECT)
@@ -184,7 +234,6 @@ const deleteRoutine = async (req, res) => {
   if (existing.is_template) return res.status(403).json({ error: 'No se pueden eliminar templates' })
   if (existing.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
-  // Eliminar ejercicios primero (FK sin CASCADE en esta BD)
   await supabase.from('routine_exercises').delete().eq('routine_id', id)
 
   const { error } = await supabase.from('routines').delete().eq('id', id)
@@ -454,6 +503,8 @@ module.exports = {
   getRoutines,
   getTemplates,
   getActiveRoutine,
+  getFavorites,
+  toggleFavorite,
   getRoutineById,
   createRoutine,
   updateRoutine,
