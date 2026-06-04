@@ -24,6 +24,21 @@ export const getActiveRoutine = async (token) => {
   return handleResponse(res)
 }
 
+// Devuelve solo rutinas con is_favorite = true del usuario
+export const getFavorites = async (token) => {
+  const res = await fetch(`${API}/favorites`, { headers: authHeader(token) })
+  return handleResponse(res)
+}
+
+// Alterna is_favorite de la rutina con ese id
+export const toggleFavorite = async (token, id) => {
+  const res = await fetch(`${API}/favorites/${id}/toggle`, {
+    method: 'PUT',
+    headers: authHeader(token)
+  })
+  return handleResponse(res)
+}
+
 export const getRoutineById = async (token, id) => {
   const res = await fetch(`${API}/${id}`, { headers: authHeader(token) })
   return handleResponse(res)

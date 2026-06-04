@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useRoutine } from '../../hooks/useRoutine'
+import { toggleFavorite } from '../../js/routines/routines.api'
 import RoutineDayColumn from '../../components/RoutineDayColumn'
 import EmptyRoutineState from '../../components/EmptyRoutineState'
 import TemplateSelector from '../../components/TemplateSelector'
@@ -77,7 +79,7 @@ const Routines = () => {
     handleUpdateExercise,
     handleRemoveExercise,
     handleDeleteRoutine,
-    handleCreateManual
+    handleCreateManual,
   } = useRoutine()
 
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
@@ -85,6 +87,24 @@ const Routines = () => {
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [pickerDay, setPickerDay] = useState(1)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const [isFav, setIsFav] = useState(routine?.is_favorite ?? false)
+  const [favLoading, setFavLoading] = useState(false)
+
+  const currentFav = routine?.is_favorite ?? false
+
+  const handleToggleFav = useCallback(async () => {
+    if (!routine || favLoading) return
+    setFavLoading(true)
+    try {
+      const res = await toggleFavorite(token, routine.id)
+      setIsFav(res.data.is_favorite)
+    } catch {
+
+    } finally {
+      setFavLoading(false)
+    }
+  }, [token, routine, favLoading])
 
   const handleTemplateSelected = () => {
     setShowTemplateSelector(false)
@@ -96,7 +116,7 @@ const Routines = () => {
       await handleCreateManual(name)
       setShowCreateManual(false)
     } catch {
-      // actionError ya está en el hook
+    
     }
   }
 
@@ -114,9 +134,6 @@ const Routines = () => {
     setShowDeleteConfirm(false)
   }
 
-  // Días activos: derivados de routine_exercises
-  // Siempre mostramos los 7 días para máxima flexibilidad.
-  // Los días sin ejercicios aparecen como "Descanso".
   const allDays = [1, 2, 3, 4, 5, 6, 7]
 
   // Loading
@@ -131,7 +148,6 @@ const Routines = () => {
     )
   }
 
-  // ── Error ────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="routines-page">
@@ -143,6 +159,8 @@ const Routines = () => {
     )
   }
 
+  const favState = routine ? (favLoading ? currentFav : (isFav !== currentFav && !favLoading ? isFav : currentFav)) : false
+
   return (
     <div className="routines-page">
       {/* Header */}
@@ -153,18 +171,38 @@ const Routines = () => {
             <p className="routines-subtitle">{routine.name}</p>
           )}
         </div>
-        {routine && (
-          <div className="routines-header__actions">
-            <button
-              className="routines-btn routines-btn--danger"
-              onClick={() => setShowDeleteConfirm(true)}
-              type="button"
-              disabled={actionLoading}
-            >
-              Eliminar rutina
-            </button>
-          </div>
-        )}
+
+        <div className="routines-header__actions">
+          {/* Link a favoritos */}
+          <Link to="/rutinas/favoritos" className="routines-btn routines-btn--favorites">
+            Favoritos
+          </Link>
+
+          {routine && (
+            <>
+              {/* Botón favorito de la rutina activa */}
+              <button
+                type="button"
+                className={`routines-btn routines-btn--fav ${routine.is_favorite || isFav ? 'routines-btn--fav-on' : ''}`}
+                onClick={handleToggleFav}
+                disabled={favLoading}
+                title={routine.is_favorite || isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+              >
+                {favLoading ? '…' : (routine.is_favorite || isFav ? '★' : '☆')}
+              </button>
+
+              {/* Eliminar rutina */}
+              <button
+                className="routines-btn routines-btn--danger"
+                onClick={() => setShowDeleteConfirm(true)}
+                type="button"
+                disabled={actionLoading}
+              >
+                Eliminar rutina
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {actionError && (
@@ -178,7 +216,6 @@ const Routines = () => {
           onCreateManual={() => setShowCreateManual(true)}
         />
       ) : (
-        /* Tablero semanal — 7 columnas siempre visibles */
         <div className="routines-board">
           {allDays.map(day => (
             <RoutineDayColumn
