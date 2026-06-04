@@ -7,12 +7,14 @@ const {
   cancelSession,
   getActiveSession,
   getSessionHistory,
+  getWeeklySessions,
   getSessionById,
   addLog
 } = require('../controllers/sessions.controller')
 
 router.get('/active', verifyToken, getActiveSession)
 router.get('/history', verifyToken, getSessionHistory)
+router.get('/weekly', verifyToken, getWeeklySessions)
 
 router.post('/start', verifyToken, startSession)
 
