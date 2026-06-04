@@ -8,20 +8,17 @@ const LOG_SELECT = `
   exercises (id, name, muscle_group, equipment, difficulty)
 `
 
-// POST /api/sessions/start 
-// Inicia una nueva sesión. Si hay una sesión IN_PROGRESS la cancela antes.
+// POST /api/sessions/start
 const startSession = async (req, res) => {
   const userId = req.user.id
   const { routine_id } = req.body
 
-  // Cancelar sesiones activas previas (evita duplicados)
   await supabase
     .from('workout_sessions')
     .update({ status: 'CANCELLED', finished_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('status', 'IN_PROGRESS')
 
-  // Verificar que la rutina pertenece al usuario (si se pasa routine_id)
   if (routine_id) {
     const { data: routine } = await supabase
       .from('routines')
@@ -50,6 +47,7 @@ const startSession = async (req, res) => {
 }
 
 // POST /api/sessions/:id/finish
+
 const finishSession = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -84,6 +82,7 @@ const finishSession = async (req, res) => {
 }
 
 // POST /api/sessions/:id/cancel
+
 const cancelSession = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -143,6 +142,7 @@ const getActiveSession = async (req, res) => {
 }
 
 // GET /api/sessions/history
+// Historial paginado de sesiones completadas
 const getSessionHistory = async (req, res) => {
   const userId = req.user.id
   const limit = parseInt(req.query.limit) || 20
@@ -161,6 +161,7 @@ const getSessionHistory = async (req, res) => {
 }
 
 // GET /api/sessions/:id
+
 const getSessionById = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
@@ -184,6 +185,7 @@ const getSessionById = async (req, res) => {
 }
 
 // POST /api/sessions/:id/logs
+
 const addLog = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params

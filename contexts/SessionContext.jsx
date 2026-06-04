@@ -12,10 +12,10 @@ const SS_KEY = 'gymtracker_active_session'
 const SessionContext = createContext(null)
 
 export const SessionProvider = ({ children }) => {
-  const [session, setSession] = useState(null)    
+  const [session, setSession] = useState(null)       // workout_sessions row + logs[]
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [elapsed, setElapsed] = useState(0)    
+  const [elapsed, setElapsed] = useState(0)           // segundos desde started_at
   const timerRef = useRef(null)
 
   const persistSession = useCallback((s) => {
@@ -39,6 +39,7 @@ export const SessionProvider = ({ children }) => {
     setElapsed(0)
   }, [])
 
+  // Primero desde sessionStorage (instantáneo), luego confirmar con backend
   useEffect(() => {
     const restore = async () => {
       const cached = sessionStorage.getItem(SS_KEY)
@@ -67,6 +68,7 @@ export const SessionProvider = ({ children }) => {
           stopTimer()
         }
       } catch {
+        // Si falla la red, mantener lo que había en sessionStorage
       }
     }
 
@@ -136,6 +138,7 @@ export const SessionProvider = ({ children }) => {
       const res = await apiAddLog(session.id, logData)
       const newLog = res.data
 
+      // Actualizar logs en estado local + sessionStorage
       setSession(prev => {
         if (!prev) return prev
         const updated = { ...prev, logs: [...(prev.logs || []), newLog] }

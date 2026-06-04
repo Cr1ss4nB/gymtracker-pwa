@@ -1,45 +1,29 @@
+// Muestra metadata de una rutina guardada con acciones de activar/eliminar.
 const TYPE_LABELS = {
   FULL_BODY: 'Full Body',
   PPL: 'Push Pull Legs',
   UPPER_LOWER: 'Upper / Lower',
 }
 
-const RoutineCard = ({ routine, onToggleFav, onActivate, onDelete, favLoading = false }) => {
+const RoutineCard = ({ routine, onActivate, onDelete }) => {
   const {
-    id,
     name,
     description,
     template_type,
     days_per_week,
-    is_favorite,
     is_active,
   } = routine
 
   return (
     <div className={`routine-card ${is_active ? 'routine-card--active' : ''}`}>
-      {/* Badge activa */}
       {is_active && (
         <span className="routine-card__active-badge">Activa</span>
       )}
 
-      {/* Encabezado */}
       <div className="routine-card__header">
         <h3 className="routine-card__name">{name}</h3>
-
-        {/* Botón favorito */}
-        <button
-          type="button"
-          className={`routine-card__fav-btn ${is_favorite ? 'routine-card__fav-btn--on' : ''}`}
-          onClick={() => onToggleFav(routine)}
-          disabled={favLoading}
-          title={is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-          aria-label={is_favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-        >
-          {is_favorite ? '★' : '☆'}
-        </button>
       </div>
 
-      {/* Meta */}
       <div className="routine-card__meta">
         {template_type && (
           <span className="routine-card__badge routine-card__badge--type">
@@ -53,12 +37,10 @@ const RoutineCard = ({ routine, onToggleFav, onActivate, onDelete, favLoading = 
         )}
       </div>
 
-      {/* Descripción opcional */}
       {description && (
         <p className="routine-card__description">{description}</p>
       )}
 
-      {/* Acciones */}
       <div className="routine-card__actions">
         {!is_active && (
           <button

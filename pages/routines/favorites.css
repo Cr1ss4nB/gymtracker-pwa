@@ -1,7 +1,3 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   FAVORITES PAGE
-───────────────────────────────────────────────────────────────────────────── */
-
 .favorites-page {
   width: 100%;
   display: flex;
@@ -48,7 +44,6 @@
 .favorites-back-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .favorites-action-error {
@@ -105,14 +100,12 @@
   to { transform: rotate(360deg); }
 }
 
-/* Grid de cards */
 .favorites-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
 
-/* Empty state */
 .favorites-empty {
   display: flex;
   flex-direction: column;
@@ -159,10 +152,6 @@
   transform: translateY(-2px);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ROUTINE CARD — usado en /favoritos y en /rutinas (lista)
-───────────────────────────────────────────────────────────────────────────── */
-
 .routine-card {
   position: relative;
   background: linear-gradient(135deg, #1e1e1e 0%, #1a1a2e 100%);
@@ -186,11 +175,10 @@
   box-shadow: 0 0 0 1px rgba(233, 69, 96, 0.3), 0 8px 24px rgba(233, 69, 96, 0.15);
 }
 
-/* Badge "Activa" */
 .routine-card__active-badge {
   position: absolute;
   top: 0.75rem;
-  right: 3rem; /* deja espacio para el botón fav */
+  right: 0.75rem;
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -201,7 +189,6 @@
   border-radius: 20px;
 }
 
-/* Encabezado: nombre + botón fav */
 .routine-card__header {
   display: flex;
   align-items: flex-start;
@@ -216,37 +203,8 @@
   margin: 0;
   line-height: 1.3;
   flex: 1;
-  /* Espacio para no solaparse con el badge activa */
-  padding-right: 0.25rem;
 }
 
-/* Botón favorito — estrella */
-.routine-card__fav-btn {
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #444;
-  transition: color 0.2s, transform 0.15s;
-  flex-shrink: 0;
-  padding: 0.1rem 0.2rem;
-}
-.routine-card__fav-btn:hover {
-  color: #f5a623;
-  transform: scale(1.15);
-}
-.routine-card__fav-btn--on {
-  color: #f5a623;
-  text-shadow: 0 0 8px rgba(245, 166, 35, 0.6);
-}
-.routine-card__fav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Meta badges */
 .routine-card__meta {
   display: flex;
   flex-wrap: wrap;
@@ -274,7 +232,6 @@
   color: #f5a623;
 }
 
-/* Descripción */
 .routine-card__description {
   font-size: 0.82rem;
   color: #666;
@@ -286,7 +243,6 @@
   overflow: hidden;
 }
 
-/* Acciones */
 .routine-card__actions {
   display: flex;
   gap: 0.5rem;
@@ -323,18 +279,12 @@
   background: rgba(233, 69, 96, 0.2);
 }
 
-/* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .favorites-grid {
     grid-template-columns: 1fr;
   }
-
   .favorites-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .favorites-back-btn {
-    align-self: flex-start;
   }
 }
