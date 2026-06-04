@@ -4,32 +4,35 @@ import ExerciseCard from './ExerciseCard'
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
-const ExercisePicker = ({ token, onAdd, onClose, defaultDay = 1 }) => {
+// token ya no es necesario: exercises.api lo lee de localStorage internamente
+const ExercisePicker = ({ onAdd, onClose, defaultDay = 1 }) => {
   const [exercises, setExercises] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedDay, setSelectedDay] = useState(defaultDay)
-  const [adding, setAdding] = useState(null) // id del ejercicio que se está agregando
+  const [adding, setAdding] = useState(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getExercises(token, {})
+        const data = await getExercises({})
         setExercises(data)
       } catch (err) {
-        console.error(err)
+        console.error('ExercisePicker load error:', err)
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [token])
+  }, [])
 
   const filtered = exercises.filter(ex => {
     if (!search.trim()) return true
     const term = search.toLowerCase()
-    return ex.name.toLowerCase().includes(term) ||
+    return (
+      ex.name.toLowerCase().includes(term) ||
       ex.muscle_group.toLowerCase().includes(term)
+    )
   })
 
   const handleAdd = useCallback(async (exercise) => {
@@ -78,7 +81,7 @@ const ExercisePicker = ({ token, onAdd, onClose, defaultDay = 1 }) => {
           />
         </div>
 
-        {/* Grid de ejercicios */}
+        {/* Grid */}
         <div className="exercise-picker__grid">
           {loading ? (
             <p className="exercise-picker__loading">Cargando ejercicios...</p>

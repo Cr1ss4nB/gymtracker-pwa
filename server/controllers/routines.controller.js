@@ -5,7 +5,7 @@ const ROUTINE_SELECT = 'id, name, description, is_template, template_type, equip
 
 // Ejercicios con datos completos del ejercicio padre
 const ROUTINE_EXERCISES_SELECT = `
-  id, day_number, order_index, target_sets, target_reps, rest_seconds, notes,
+  id, day_number, order_index, target_sets, target_reps, rest_seconds, target_weight_kg, notes,
   exercises (id, name, muscle_group, submuscles, equipment, difficulty, image_url, is_home)
 `
 
@@ -29,14 +29,12 @@ const deactivateAllUserRoutines = (userId) =>
 // GET /api/routines
 const getRoutines = async (req, res) => {
   const userId = req.user.id
-
   const { data, error } = await supabase
     .from('routines')
     .select(ROUTINE_SELECT)
     .eq('user_id', userId)
     .eq('is_template', false)
     .order('created_at', { ascending: false })
-
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data: data || [] })
 }
@@ -49,7 +47,6 @@ const getTemplates = async (req, res) => {
     .eq('is_template', true)
     .order('template_type')
     .order('days_per_week')
-
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data: data || [] })
 }
@@ -57,19 +54,16 @@ const getTemplates = async (req, res) => {
 // GET /api/routines/active
 const getActiveRoutine = async (req, res) => {
   const userId = req.user.id
-
   const { data: routine, error: routineError } = await supabase
     .from('routines')
     .select(ROUTINE_SELECT)
     .eq('user_id', userId)
     .eq('is_active', true)
     .single()
-
   if (routineError) {
     if (routineError.code === 'PGRST116') return res.json({ data: null })
     return res.status(500).json({ error: routineError.message })
   }
-
   if (!routine) return res.json({ data: null })
 
   const { data: exercises, error: exError } = await supabase
@@ -294,6 +288,7 @@ const useTemplate = async (req, res) => {
       target_sets: ex.target_sets,
       target_reps: ex.target_reps,
       rest_seconds: ex.rest_seconds,
+      target_weight_kg: ex.target_weight_kg || 0,
       notes: ex.notes
     }))
 
@@ -376,7 +371,7 @@ const getRoutineExercises = async (req, res) => {
 const addExercise = async (req, res) => {
   const userId = req.user.id
   const { id } = req.params
-  const { exercise_id, day_number, target_sets, target_reps, rest_seconds, notes } = req.body
+  const { exercise_id, day_number, target_sets, target_reps, rest_seconds, target_weight_kg, notes } = req.body
 
   if (!exercise_id || !day_number) {
     return res.status(400).json({ error: 'exercise_id y day_number son obligatorios' })
@@ -415,6 +410,7 @@ const addExercise = async (req, res) => {
       target_sets: target_sets || 3,
       target_reps: target_reps || 10,
       rest_seconds: rest_seconds || 90,
+      target_weight_kg: target_weight_kg || 0,
       notes: notes || null
     })
     .select(ROUTINE_EXERCISES_SELECT)
@@ -452,6 +448,7 @@ const updateExercise = async (req, res) => {
   if (target_sets !== undefined) updates.target_sets = target_sets
   if (target_reps !== undefined) updates.target_reps = target_reps
   if (rest_seconds !== undefined) updates.rest_seconds = rest_seconds
+  if (target_weight_kg !== undefined) updates.target_weight_kg = target_weight_kg
   if (day_number !== undefined) updates.day_number = day_number
   if (order_index !== undefined) updates.order_index = order_index
   if (notes !== undefined) updates.notes = notes

@@ -1,21 +1,33 @@
 const API_URL = '/api/exercises'
 
-/**
- * Obtiene la lista de ejercicios con filtros.
- *
- * @param {string} token - JWT del usuario autenticado
- * @param {Object} filters - Filtros opcionales
- * @param {string} [filters.muscle_group] - Grupo muscular exacto
- * @param {string} [filters.equipment]    - Equipamiento exacto
- * @param {string} [filters.difficulty]   - Dificultad exacta
- * @param {boolean} [filters.is_home]     - Solo ejercicios en casa
- * @param {string} [filters.search]       - Búsqueda por nombre (parcial)
- *
- * @returns {Promise<Array>} Lista de ejercicios
- */
-export const getExercises = async (token, filters = {}) => {
-    const params = new URLSearchParams()
+const getToken = () => localStorage.getItem('token')
 
+const authHeader = () => ({
+    'Authorization': `Bearer ${getToken()}`
+})
+
+const handleResponse = async (res) => {
+    if (res.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw new Error('Sesión expirada')
+    }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || `Error del servidor: ${res.status}`)
+    return data
+}
+
+const safeFetch = async (url, options) => {
+    try {
+        return await fetch(url, options)
+    } catch {
+        throw new Error('No se pudo conectar al servidor')
+    }
+}
+
+export const getExercises = async (filters = {}) => {
+    const params = new URLSearchParams()
     if (filters.muscle_group) params.append('muscle_group', filters.muscle_group)
     if (filters.equipment) params.append('equipment', filters.equipment)
     if (filters.difficulty) params.append('difficulty', filters.difficulty)
@@ -29,37 +41,13 @@ export const getExercises = async (token, filters = {}) => {
     const queryString = params.toString()
     const url = queryString ? `${API_URL}?${queryString}` : API_URL
 
-    const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-
-    if (!res.ok) {
-        const error = await res.json().catch(() => ({}))
-        throw new Error(error.error || 'Error al obtener ejercicios')
-    }
-
-    const json = await res.json()
+    const res = await safeFetch(url, { headers: authHeader() })
+    const json = await handleResponse(res)
     return json.data || []
 }
 
-/**
- * Obtiene el detalle de un ejercicio por ID.
- *
- * @param {string} token - JWT del usuario autenticado
- * @param {string} id    - UUID del ejercicio
- *
- * @returns {Promise<Object>} Ejercicio completo
- */
-export const getExerciseById = async (token, id) => {
-    const res = await fetch(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-
-    if (!res.ok) {
-        const error = await res.json().catch(() => ({}))
-        throw new Error(error.error || 'Error al obtener ejercicio')
-    }
-
-    const json = await res.json()
+export const getExerciseById = async (id) => {
+    const res = await safeFetch(`${API_URL}/${id}`, { headers: authHeader() })
+    const json = await handleResponse(res)
     return json.data
 }
