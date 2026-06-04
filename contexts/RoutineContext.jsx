@@ -8,21 +8,20 @@ export const RoutineProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const token = localStorage.getItem('token')
-
   const fetchActiveRoutine = useCallback(async () => {
+    const token = localStorage.getItem('token')
     if (!token) return
     setLoading(true)
     setError('')
     try {
-      const res = await getActiveRoutine(token)
+      const res = await getActiveRoutine()
       setRoutine(res.data)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [])
 
   const clearRoutine = useCallback(() => setRoutine(null), [])
 

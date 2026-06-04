@@ -9,7 +9,6 @@ import ExercisePicker from '../../components/ExercisePicker'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import './routines.css'
 
-// Modal de creación manual
 const CreateManualModal = ({ onConfirm, onClose, loading }) => {
   const [name, setName] = useState('')
 
@@ -24,11 +23,15 @@ const CreateManualModal = ({ onConfirm, onClose, loading }) => {
       <div className="modal-box modal-box--sm" onClick={e => e.stopPropagation()}>
         <div className="modal-box__header">
           <h2 className="modal-box__title">Nueva rutina</h2>
-          <button className="modal-box__close" onClick={onClose} type="button">✕</button>
+          <button className="modal-box__close" onClick={onClose} type="button">
+            ✕
+          </button>
         </div>
+
         <form onSubmit={handleSubmit} className="modal-box__form">
           <div className="modal-box__field">
             <label>Nombre de la rutina</label>
+
             <input
               type="text"
               value={name}
@@ -37,10 +40,12 @@ const CreateManualModal = ({ onConfirm, onClose, loading }) => {
               required
               autoFocus
             />
+
             <span className="modal-box__field-hint">
               Podrás agregar ejercicios a cada día desde el tablero.
             </span>
           </div>
+
           <div className="modal-box__footer">
             <button
               type="button"
@@ -50,6 +55,7 @@ const CreateManualModal = ({ onConfirm, onClose, loading }) => {
             >
               Cancelar
             </button>
+
             <button
               type="submit"
               className="modal-box__btn modal-box__btn--primary"
@@ -64,7 +70,6 @@ const CreateManualModal = ({ onConfirm, onClose, loading }) => {
   )
 }
 
-// Componente principal
 const Routines = () => {
   const token = localStorage.getItem('token')
 
@@ -79,7 +84,7 @@ const Routines = () => {
     handleUpdateExercise,
     handleRemoveExercise,
     handleDeleteRoutine,
-    handleCreateManual,
+    handleCreateManual
   } = useRoutine()
 
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
@@ -95,12 +100,14 @@ const Routines = () => {
 
   const handleToggleFav = useCallback(async () => {
     if (!routine || favLoading) return
+
     setFavLoading(true)
+
     try {
       const res = await toggleFavorite(token, routine.id)
       setIsFav(res.data.is_favorite)
     } catch {
-
+      // actionError visible en UI
     } finally {
       setFavLoading(false)
     }
@@ -116,7 +123,7 @@ const Routines = () => {
       await handleCreateManual(name)
       setShowCreateManual(false)
     } catch {
-    
+      // actionError visible en UI
     }
   }
 
@@ -136,7 +143,6 @@ const Routines = () => {
 
   const allDays = [1, 2, 3, 4, 5, 6, 7]
 
-  // Loading
   if (loading) {
     return (
       <div className="routines-page">
@@ -153,17 +159,24 @@ const Routines = () => {
       <div className="routines-page">
         <div className="routines-error">
           <span>⚠️ {error}</span>
-          <button onClick={fetchActiveRoutine} type="button">Reintentar</button>
+          <button onClick={fetchActiveRoutine} type="button">
+            Reintentar
+          </button>
         </div>
       </div>
     )
   }
 
-  const favState = routine ? (favLoading ? currentFav : (isFav !== currentFav && !favLoading ? isFav : currentFav)) : false
+  const favState = routine
+    ? (
+        favLoading
+          ? currentFav
+          : (isFav !== currentFav && !favLoading ? isFav : currentFav)
+      )
+    : false
 
   return (
     <div className="routines-page">
-      {/* Header */}
       <div className="routines-header">
         <div>
           <h1 className="routines-title">Rutinas</h1>
@@ -173,25 +186,31 @@ const Routines = () => {
         </div>
 
         <div className="routines-header__actions">
-          {/* Link a favoritos */}
-          <Link to="/rutinas/favoritos" className="routines-btn routines-btn--favorites">
+          <Link
+            to="/rutinas/favoritos"
+            className="routines-btn routines-btn--favorites"
+          >
             Favoritos
           </Link>
 
           {routine && (
             <>
-              {/* Botón favorito de la rutina activa */}
               <button
                 type="button"
-                className={`routines-btn routines-btn--fav ${routine.is_favorite || isFav ? 'routines-btn--fav-on' : ''}`}
+                className={`routines-btn routines-btn--fav ${
+                  favState ? 'routines-btn--fav-on' : ''
+                }`}
                 onClick={handleToggleFav}
                 disabled={favLoading}
-                title={routine.is_favorite || isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                title={
+                  favState
+                    ? 'Quitar de favoritos'
+                    : 'Añadir a favoritos'
+                }
               >
-                {favLoading ? '…' : (routine.is_favorite || isFav ? '★' : '☆')}
+                {favLoading ? '…' : (favState ? '★' : '☆')}
               </button>
 
-              {/* Eliminar rutina */}
               <button
                 className="routines-btn routines-btn--danger"
                 onClick={() => setShowDeleteConfirm(true)}
@@ -206,10 +225,11 @@ const Routines = () => {
       </div>
 
       {actionError && (
-        <div className="routines-action-error">⚠️ {actionError}</div>
+        <div className="routines-action-error">
+          ⚠️ {actionError}
+        </div>
       )}
 
-      {/* Sin rutina activa */}
       {!routine ? (
         <EmptyRoutineState
           onUseTemplate={() => setShowTemplateSelector(true)}
@@ -230,7 +250,6 @@ const Routines = () => {
         </div>
       )}
 
-      {/* Modales */}
       {showTemplateSelector && (
         <TemplateSelector
           token={token}

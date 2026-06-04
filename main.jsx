@@ -30,37 +30,39 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <RoutineProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <SessionProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route path="/dashboard" element={
-            <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>
-          } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/ejercicios" element={
-            <ProtectedRoute><Layout><Exercises /></Layout></ProtectedRoute>
-          } />
+            <Route path="/ejercicios" element={
+              <ProtectedRoute><Layout><Exercises /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/rutinas/favoritos" element={
-            <ProtectedRoute><Layout><Favorites /></Layout></ProtectedRoute>
-          } />
+            <Route path="/rutinas/favoritos" element={
+              <ProtectedRoute><Layout><Favorites /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/rutinas" element={
-            <ProtectedRoute><Layout><Routines /></Layout></ProtectedRoute>
-          } />
+            <Route path="/rutinas" element={
+              <ProtectedRoute><Layout><Routines /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/progreso" element={
-            <ProtectedRoute><Layout><Progress /></Layout></ProtectedRoute>
-          } />
+            <Route path="/progreso" element={
+              <ProtectedRoute><Layout><Progress /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/profile" element={
-            <ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>
-          } />
+            <Route path="/profile" element={
+              <ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>
+            } />
 
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </SessionProvider>
       </RoutineProvider>
     </BrowserRouter>
   </StrictMode>

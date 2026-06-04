@@ -9,7 +9,8 @@ const TYPE_LABELS = {
 
 const TYPE_ORDER = ['FULL_BODY', 'PPL', 'UPPER_LOWER']
 
-const TemplateSelector = ({ token, onSelect, onClose }) => {
+// token ya no es prop: routines.api lo lee de localStorage internamente
+const TemplateSelector = ({ onSelect, onClose }) => {
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(false)
@@ -21,7 +22,7 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
       setLoading(true)
       setError('')
       try {
-        const res = await getTemplates(token)
+        const res = await getTemplates()
         setTemplates(res.data || [])
       } catch (err) {
         setError(err.message || 'Error al cargar plantillas')
@@ -30,9 +31,8 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
       }
     }
     load()
-  }, [token])
+  }, [])
 
-  // Agrupar por template_type respetando TYPE_ORDER
   const grouped = TYPE_ORDER.reduce((acc, type) => {
     const items = templates.filter(t => t.template_type === type)
     if (items.length > 0) acc[type] = items
@@ -46,7 +46,7 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
     setApplying(true)
     setError('')
     try {
-      const res = await useTemplate(token, selected.id)
+      const res = await useTemplate(selected.id)
       onSelect(res.data)
     } catch (err) {
       setError(err.message || 'Error al aplicar plantilla')
@@ -87,18 +87,18 @@ const TemplateSelector = ({ token, onSelect, onClose }) => {
                   {items
                     .sort((a, b) => (a.days_per_week || 0) - (b.days_per_week || 0))
                     .map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`template-selector__option ${selected?.id === t.id ? 'selected' : ''}`}
-                      onClick={() => setSelected(t)}
-                    >
-                      <span className="template-selector__option-name">{t.name}</span>
-                      <span className="template-selector__option-days">
-                        {t.days_per_week} días / semana
-                      </span>
-                    </button>
-                  ))}
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`template-selector__option ${selected?.id === t.id ? 'selected' : ''}`}
+                        onClick={() => setSelected(t)}
+                      >
+                        <span className="template-selector__option-name">{t.name}</span>
+                        <span className="template-selector__option-days">
+                          {t.days_per_week} días / semana
+                        </span>
+                      </button>
+                    ))}
                 </div>
               </div>
             ))}
