@@ -6,18 +6,18 @@ import './profile.css'
 const Profile = () => {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
-  
+
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
+
   const [formData, setFormData] = useState({
     dateOfBirth: '',
     height: '',
     weight: ''
   })
-  
+
   const [profileData, setProfileData] = useState(null)
 
   useEffect(() => {
@@ -29,16 +29,15 @@ const Profile = () => {
       setLoading(true)
       const data = await getProfile(token)
       setProfileData(data)
-      
-      if (data.age) {
-        // Calcular fecha de nacimiento aproximada
-        const today = new Date()
-        const birthYear = today.getFullYear() - data.age
+
+      if (data.height && data.weight) {
         setFormData({
-          dateOfBirth: `${birthYear}-01-01`,
+          dateOfBirth: data.birth_date || '',
           height: data.height || '',
           weight: data.weight || ''
         })
+        // Si no tiene birth_date aún, abrir editor
+        if (!data.birth_date) setIsEditing(true)
       } else {
         setIsEditing(true)
       }
@@ -64,11 +63,13 @@ const Profile = () => {
       setProfileData(updated)
       setIsEditing(false)
       setSuccess('Perfil actualizado exitosamente')
-      
-      // Actualizar localStorage
-      localStorage.setItem('user', JSON.stringify({ ...user, age: updated.age }))
-      
-      // Limpiar mensaje de éxito después de 3 segundos
+
+      localStorage.setItem('user', JSON.stringify({
+        ...user,
+        age: updated.age,
+        birth_date: updated.birth_date
+      }))
+
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err.message)
@@ -99,7 +100,6 @@ const Profile = () => {
                 required
               />
             </div>
-
             <div className="form-group">
               <label>Altura (cm)</label>
               <input
@@ -108,10 +108,11 @@ const Profile = () => {
                 value={formData.height}
                 onChange={handleChange}
                 placeholder="ej: 175"
+                min="140"
+                max="220"
                 required
               />
             </div>
-
             <div className="form-group">
               <label>Peso (kg)</label>
               <input
@@ -120,13 +121,14 @@ const Profile = () => {
                 value={formData.weight}
                 onChange={handleChange}
                 placeholder="ej: 75"
+                min="30"
+                max="300"
                 required
               />
             </div>
-
             <div className="form-buttons">
               <button type="submit" className="btn-save">Guardar</button>
-              {profileData?.age && (
+              {profileData?.birth_date && (
                 <button type="button" className="btn-cancel" onClick={() => setIsEditing(false)}>
                   Cancelar
                 </button>
@@ -139,38 +141,53 @@ const Profile = () => {
               <label>Nombre</label>
               <p>{user.name || 'N/A'}</p>
             </div>
-
             <div className="info-group">
               <label>Email</label>
               <p>{user.email || 'N/A'}</p>
             </div>
 
-            {profileData?.age && (
+            {profileData?.birth_date && (
               <>
+                <div className="info-group">
+                  <label>Fecha de Nacimiento</label>
+                  {/* Mostrar la fecha exacta sin conversión UTC */}
+                  <p>
+                    {(() => {
+                      const [y, m, d] = profileData.birth_date.split('-')
+                      return `${d}/${m}/${y}`
+                    })()}
+                  </p>
+                </div>
                 <div className="info-group">
                   <label>Edad</label>
                   <p>{profileData.age} años</p>
                 </div>
-
-                <div className="info-group">
-                  <label>Altura</label>
-                  <p>{profileData.height} cm</p>
-                </div>
-
-                <div className="info-group">
-                  <label>Peso</label>
-                  <p>{profileData.weight} kg</p>
-                </div>
-
-                <div className="info-group imc-group">
-                  <label>IMC</label>
-                  <div className="imc-display" style={{ backgroundColor: imc.hex }}>
-                    <p className="imc-value">{profileData.imc}</p>
-                    <p className="imc-status">{imc.status}</p>
-                    <p className="imc-recommendation">{imc.recommendation}</p>
-                  </div>
-                </div>
               </>
+            )}
+
+            {profileData?.height && (
+              <div className="info-group">
+                <label>Altura</label>
+                <p>{profileData.height} cm</p>
+              </div>
+            )}
+
+            {profileData?.weight && (
+              <div className="info-group">
+                <label>Peso</label>
+                <p>{profileData.weight} kg</p>
+              </div>
+            )}
+
+            {imc && (
+              <div className="info-group imc-group">
+                <label>IMC</label>
+                <div className="imc-display" style={{ backgroundColor: imc.hex }}>
+                  <p className="imc-value">{profileData.imc}</p>
+                  <p className="imc-status">{imc.status}</p>
+                  <p className="imc-recommendation">{imc.recommendation}</p>
+                </div>
+              </div>
             )}
 
             <button className="btn-edit" onClick={() => setIsEditing(true)}>

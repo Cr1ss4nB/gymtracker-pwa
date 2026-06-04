@@ -9,6 +9,7 @@ const LOG_SELECT = `
 `
 
 // POST /api/sessions/start
+
 const startSession = async (req, res) => {
   const userId = req.user.id
   const { routine_id } = req.body
@@ -21,11 +22,7 @@ const startSession = async (req, res) => {
 
   if (routine_id) {
     const { data: routine } = await supabase
-      .from('routines')
-      .select('id, user_id')
-      .eq('id', routine_id)
-      .single()
-
+      .from('routines').select('id, user_id').eq('id', routine_id).single()
     if (!routine || routine.user_id !== userId) {
       return res.status(403).json({ error: 'Rutina no válida' })
     }
@@ -53,10 +50,7 @@ const finishSession = async (req, res) => {
   const { id } = req.params
 
   const { data: session, error: fetchError } = await supabase
-    .from('workout_sessions')
-    .select('id, user_id, started_at, status')
-    .eq('id', id)
-    .single()
+    .from('workout_sessions').select('id, user_id, started_at, status').eq('id', id).single()
 
   if (fetchError || !session) return res.status(404).json({ error: 'Sesión no encontrada' })
   if (session.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
@@ -68,14 +62,8 @@ const finishSession = async (req, res) => {
 
   const { data, error } = await supabase
     .from('workout_sessions')
-    .update({
-      status: 'COMPLETED',
-      finished_at: finishedAt.toISOString(),
-      duration_seconds: durationSeconds
-    })
-    .eq('id', id)
-    .select(SESSION_SELECT)
-    .single()
+    .update({ status: 'COMPLETED', finished_at: finishedAt.toISOString(), duration_seconds: durationSeconds })
+    .eq('id', id).select(SESSION_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data })
@@ -88,10 +76,7 @@ const cancelSession = async (req, res) => {
   const { id } = req.params
 
   const { data: session, error: fetchError } = await supabase
-    .from('workout_sessions')
-    .select('id, user_id, status')
-    .eq('id', id)
-    .single()
+    .from('workout_sessions').select('id, user_id, status').eq('id', id).single()
 
   if (fetchError || !session) return res.status(404).json({ error: 'Sesión no encontrada' })
   if (session.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
@@ -99,20 +84,15 @@ const cancelSession = async (req, res) => {
 
   const { data, error } = await supabase
     .from('workout_sessions')
-    .update({
-      status: 'CANCELLED',
-      finished_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .select(SESSION_SELECT)
-    .single()
+    .update({ status: 'CANCELLED', finished_at: new Date().toISOString() })
+    .eq('id', id).select(SESSION_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.json({ data })
 }
 
 // GET /api/sessions/active
-// Devuelve la sesión IN_PROGRESS del usuario con sus logs
+
 const getActiveSession = async (req, res) => {
   const userId = req.user.id
 
@@ -133,16 +113,14 @@ const getActiveSession = async (req, res) => {
   if (!session) return res.json({ data: null })
 
   const { data: logs } = await supabase
-    .from('session_exercise_logs')
-    .select(LOG_SELECT)
-    .eq('session_id', session.id)
-    .order('created_at', { ascending: true })
+    .from('session_exercise_logs').select(LOG_SELECT)
+    .eq('session_id', session.id).order('created_at', { ascending: true })
 
   res.json({ data: { ...session, logs: logs || [] } })
 }
 
 // GET /api/sessions/history
-// Historial paginado de sesiones completadas
+
 const getSessionHistory = async (req, res) => {
   const userId = req.user.id
   const limit = parseInt(req.query.limit) || 20
@@ -160,6 +138,35 @@ const getSessionHistory = async (req, res) => {
   res.json({ data: data || [], total: count || 0, limit, offset })
 }
 
+// GET /api/sessions/weekly
+
+const getWeeklySessions = async (req, res) => {
+  const userId = req.user.id
+
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - daysToMonday)
+  monday.setHours(0, 0, 0, 0)
+
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  sunday.setHours(23, 59, 59, 999)
+
+  const { data, error, count } = await supabase
+    .from('workout_sessions')
+    .select(SESSION_SELECT, { count: 'exact' })
+    .eq('user_id', userId)
+    .eq('status', 'COMPLETED')
+    .gte('started_at', monday.toISOString())
+    .lte('started_at', sunday.toISOString())
+    .order('started_at', { ascending: false })
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ data: data || [], total: count || 0, week_start: monday.toISOString() })
+}
+
 // GET /api/sessions/:id
 
 const getSessionById = async (req, res) => {
@@ -167,19 +174,14 @@ const getSessionById = async (req, res) => {
   const { id } = req.params
 
   const { data: session, error } = await supabase
-    .from('workout_sessions')
-    .select(SESSION_SELECT)
-    .eq('id', id)
-    .single()
+    .from('workout_sessions').select(SESSION_SELECT).eq('id', id).single()
 
   if (error || !session) return res.status(404).json({ error: 'Sesión no encontrada' })
   if (session.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
 
   const { data: logs } = await supabase
-    .from('session_exercise_logs')
-    .select(LOG_SELECT)
-    .eq('session_id', id)
-    .order('created_at', { ascending: true })
+    .from('session_exercise_logs').select(LOG_SELECT)
+    .eq('session_id', id).order('created_at', { ascending: true })
 
   res.json({ data: { ...session, logs: logs || [] } })
 }
@@ -194,10 +196,7 @@ const addLog = async (req, res) => {
   if (!exercise_id) return res.status(400).json({ error: 'exercise_id es obligatorio' })
 
   const { data: session, error: sError } = await supabase
-    .from('workout_sessions')
-    .select('id, user_id, status')
-    .eq('id', id)
-    .single()
+    .from('workout_sessions').select('id, user_id, status').eq('id', id).single()
 
   if (sError || !session) return res.status(404).json({ error: 'Sesión no encontrada' })
   if (session.user_id !== userId) return res.status(403).json({ error: 'Sin permiso' })
@@ -206,26 +205,20 @@ const addLog = async (req, res) => {
   const { data, error } = await supabase
     .from('session_exercise_logs')
     .insert({
-      session_id: id,
-      exercise_id,
+      session_id: id, exercise_id,
       performed_sets: performed_sets || null,
       performed_reps: performed_reps || null,
       performed_weight_kg: performed_weight_kg || null,
       notes: notes || null
     })
-    .select(LOG_SELECT)
-    .single()
+    .select(LOG_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json({ data })
 }
 
 module.exports = {
-  startSession,
-  finishSession,
-  cancelSession,
-  getActiveSession,
-  getSessionHistory,
-  getSessionById,
-  addLog
+  startSession, finishSession, cancelSession,
+  getActiveSession, getSessionHistory, getWeeklySessions,
+  getSessionById, addLog
 }

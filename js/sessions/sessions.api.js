@@ -2,10 +2,7 @@ const API = '/api/sessions'
 
 const getToken = () => localStorage.getItem('token')
 
-const authHeader = () => ({
-    'Authorization': `Bearer ${getToken()}`
-})
-
+const authHeader = () => ({ 'Authorization': `Bearer ${getToken()}` })
 const jsonHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${getToken()}`
@@ -24,52 +21,36 @@ const handleResponse = async (res) => {
 }
 
 const safeFetch = async (url, options) => {
-    try {
-        return await fetch(url, options)
-    } catch {
-        throw new Error('No se pudo conectar al servidor')
-    }
+    try { return await fetch(url, options) }
+    catch { throw new Error('No se pudo conectar al servidor') }
 }
-
-// Iniciar sesión
 
 export const startSession = async (routineId = null) => {
     const res = await safeFetch(`${API}/start`, {
-        method: 'POST',
-        headers: jsonHeaders(),
+        method: 'POST', headers: jsonHeaders(),
         body: JSON.stringify({ routine_id: routineId })
     })
     return handleResponse(res)
 }
 
-// Terminar sesión
-
 export const finishSession = async (sessionId) => {
     const res = await safeFetch(`${API}/${sessionId}/finish`, {
-        method: 'POST',
-        headers: authHeader()
+        method: 'POST', headers: authHeader()
     })
     return handleResponse(res)
 }
-
-// Cancelar sesión
 
 export const cancelSession = async (sessionId) => {
     const res = await safeFetch(`${API}/${sessionId}/cancel`, {
-        method: 'POST',
-        headers: authHeader()
+        method: 'POST', headers: authHeader()
     })
     return handleResponse(res)
 }
-
-// Obtener sesión activa
 
 export const getActiveSession = async () => {
     const res = await safeFetch(`${API}/active`, { headers: authHeader() })
     return handleResponse(res)
 }
-
-// Historial
 
 export const getSessionHistory = async ({ limit = 20, offset = 0 } = {}) => {
     const res = await safeFetch(`${API}/history?limit=${limit}&offset=${offset}`, {
@@ -78,19 +59,19 @@ export const getSessionHistory = async ({ limit = 20, offset = 0 } = {}) => {
     return handleResponse(res)
 }
 
-// Detalle de sesión
+export const getWeeklySessions = async () => {
+    const res = await safeFetch(`${API}/weekly`, { headers: authHeader() })
+    return handleResponse(res)
+}
 
 export const getSessionById = async (sessionId) => {
     const res = await safeFetch(`${API}/${sessionId}`, { headers: authHeader() })
     return handleResponse(res)
 }
 
-// Registrar log (set completado)
-
 export const addLog = async (sessionId, { exercise_id, performed_sets, performed_reps, performed_weight_kg, notes }) => {
     const res = await safeFetch(`${API}/${sessionId}/logs`, {
-        method: 'POST',
-        headers: jsonHeaders(),
+        method: 'POST', headers: jsonHeaders(),
         body: JSON.stringify({ exercise_id, performed_sets, performed_reps, performed_weight_kg, notes })
     })
     return handleResponse(res)
