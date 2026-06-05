@@ -15,6 +15,7 @@ import Layout from './components/Layout'
 
 import { RoutineProvider } from './contexts/RoutineContext'
 import { SessionProvider } from './contexts/SessionContext'
+import { requestNotificationPermission, isSubscribed } from './js/lib/notifications.js'
 
 import './styles/global.css'
 import './js/lib/indexeddb.js'
@@ -23,7 +24,13 @@ import { checkAndSyncOnStartup } from './js/lib/syncManager.js'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('[SW] Service Worker registrado'))
+      .then(async () => {
+        console.log('[SW] Service Worker registrado')
+        const subscribed = await isSubscribed()
+        if (!subscribed && localStorage.getItem('token')) {
+          await requestNotificationPermission()
+        }
+      })
       .catch((err) => console.warn('[SW] Error al registrar SW:', err))
   })
 }

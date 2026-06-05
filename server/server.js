@@ -7,12 +7,14 @@ const profileRoutes = require('./routes/profile.routes')
 const exercisesRoutes = require('./routes/exercises.routes')
 const routinesRoutes = require('./routes/routines.routes')
 const sessionsRoutes = require('./routes/sessions.routes')
+const pushRoutes = require('./routes/push.routes')
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 app.use(express.static('public'))
+app.use('/api/push', pushRoutes)
 
 app.use('/api/auth', authRoutes)
 app.use('/api/profile', profileRoutes)
