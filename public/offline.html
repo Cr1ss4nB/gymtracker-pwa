@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sin conexión — GymTracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #0f0f0f;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e94560;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 15px;
+      color: #aaaaaa;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .divider {
+      width: 40px;
+      height: 3px;
+      background: #e94560;
+      margin: 24px auto;
+      border-radius: 2px;
+    }
+
+    .tips {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 24px 0;
+      text-align: left;
+    }
+
+    .tips h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #e94560;
+      margin-bottom: 12px;
+    }
+
+    .tips ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tips li {
+      font-size: 14px;
+      color: #cccccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tips li::before {
+      content: '✓';
+      color: #e94560;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    button {
+      background: #e94560;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>Sin conexión</h1>
+    <p>No tienes acceso a internet en este momento.</p>
+    <p>Pero puedes seguir entrenando.</p>
+
+    <div class="divider"></div>
+
+    <div class="tips">
+      <h2>Disponible offline</h2>
+      <ul>
+        <li>Ver tu rutina activa</li>
+        <li>Registrar series y repeticiones</li>
+        <li>Iniciar y finalizar entrenamientos</li>
+        <li>Los cambios se sincronizan al reconectar</li>
+      </ul>
+    </div>
+
+    <button onclick="window.location.href='/'">
+      Volver a la app
+    </button>
+  </div>
+</body>
+</html>

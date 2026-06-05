@@ -17,6 +17,8 @@ import { RoutineProvider } from './contexts/RoutineContext'
 import { SessionProvider } from './contexts/SessionContext'
 
 import './styles/global.css'
+import './js/lib/indexeddb.js'
+import { checkAndSyncOnStartup } from './js/lib/syncManager.js'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -25,6 +27,8 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.warn('[SW] Error al registrar SW:', err))
   })
 }
+
+checkAndSyncOnStartup()
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token')
