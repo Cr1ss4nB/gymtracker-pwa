@@ -6,29 +6,24 @@ import { updateProfile } from '../../js/profile/profile.api'
 import '../dashboard/dashboard.css'
 
 const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-const today = new Date()
+const today     = new Date()
 const nombreDia = DAYS_ES[today.getDay()]
-const fechaStr = today.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
+const fechaStr  = today.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
 
-const isProfileComplete = (userData) =>
-  userData &&
-  userData.age != null && userData.age > 0 &&
-  userData.height != null && userData.height > 0 &&
-  userData.weight != null && userData.weight > 0
+const isProfileComplete = (u) =>
+  u && u.age != null && u.age > 0 && u.height != null && u.weight != null
 
 const Dashboard = () => {
   const token = localStorage.getItem('token')
   const [user, setUser] = useState({})
 
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [profileLoading, setProfileLoading] = useState(false)
-  const [profileError, setProfileError] = useState('')
-  const [formData, setFormData] = useState({ dateOfBirth: '', height: '', weight: '' })
+  const [showProfileModal, setShowProfileModal]   = useState(false)
+  const [profileLoading, setProfileLoading]       = useState(false)
+  const [profileError, setProfileError]           = useState('')
+  const [formData, setFormData]                   = useState({ dateOfBirth: '', height: '', weight: '' })
 
-  // Rutina
   const { routine } = useRoutineContext()
 
-  // Sesión
   const {
     isActive,
     elapsed,
@@ -43,8 +38,9 @@ const Dashboard = () => {
     error: sessionError
   } = useSession()
 
-  const [weeklySessions, setWeeklySessions] = useState([])
-  const [weeklyLoading, setWeeklyLoading] = useState(true)
+  const [weeklySessions,  setWeeklySessions]  = useState([])
+  const [weeklyLoading,   setWeeklyLoading]   = useState(true)
+  const [alreadyTrainedToday, setAlreadyTrainedToday] = useState(false)
 
   const activeDaysCount = routine?.active_days_count ?? routine?.active_days?.length ?? 0
 
@@ -54,24 +50,30 @@ const Dashboard = () => {
     if (!isProfileComplete(userData)) setShowProfileModal(true)
   }, [])
 
-  useEffect(() => {
+  const loadWeekly = async () => {
     if (!token) return
-    const loadWeekly = async () => {
-      setWeeklyLoading(true)
-      try {
-        const res = await getWeeklySessions()
-        setWeeklySessions(res.data || [])
-      } catch {
-      } finally {
-        setWeeklyLoading(false)
-      }
+    setWeeklyLoading(true)
+    try {
+      const res = await getWeeklySessions()
+      const sessions = res.data || []
+      setWeeklySessions(sessions)
+
+      const todayStr = new Date().toDateString()
+      const trainedToday = sessions.some(s => new Date(s.started_at).toDateString() === todayStr)
+      setAlreadyTrainedToday(trainedToday)
+    } catch {
+    
+    } finally {
+      setWeeklyLoading(false)
     }
+  }
+
+  useEffect(() => {
     loadWeekly()
   }, [isActive])
 
   const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   const handleProfileSubmit = async (e) => {
@@ -94,36 +96,41 @@ const Dashboard = () => {
   const handleStartSession = async () => {
     try {
       await startWithActiveRoutine()
-    } catch { /* sessionError visible */ }
+    } catch (err) {
+    
+    }
   }
 
   const handleFinishSession = async () => {
     try {
       await finishSession()
-      // Refrescar contador semanal
-      const res = await getWeeklySessions()
-      setWeeklySessions(res.data || [])
+      await loadWeekly()
     } catch { /* sessionError visible */ }
   }
 
   const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
   const monday = (() => {
     const d = new Date()
-    const day = d.getDay()
-    const diff = day === 0 ? 6 : day - 1
+    const diff = d.getDay() === 0 ? 6 : d.getDay() - 1
     d.setDate(d.getDate() - diff)
     d.setHours(0, 0, 0, 0)
     return d
   })()
 
   const weekDaysDone = weekDays.map((_, i) => {
-    const dayDate = new Date(monday)
-    dayDate.setDate(monday.getDate() + i)
-    return weeklySessions.some(s => {
-      const sd = new Date(s.started_at)
-      return sd.toDateString() === dayDate.toDateString()
-    })
+    const day = new Date(monday)
+    day.setDate(monday.getDate() + i)
+    return weeklySessions.some(s => new Date(s.started_at).toDateString() === day.toDateString())
   })
+
+  const startBtnLabel = (() => {
+    if (sessionLoading)        return 'Un momento...'
+    if (!routine)              return 'Sin rutina activa'
+    if (alreadyTrainedToday)   return '¡Ya entrenaste hoy! ✓'
+    return 'Iniciar entrenamiento'
+  })()
+
+  const canStart = routine && !isActive && !sessionLoading && !alreadyTrainedToday
 
   return (
     <>
@@ -160,7 +167,9 @@ const Dashboard = () => {
         <div>
           <h1 className="welcome-title">Hola {user.name || 'Usuario'}, hoy es {nombreDia}</h1>
           {weeklySessions.length > 0 && (
-            <p className="welcome-sub">Llevas {weeklySessions.length} sesión{weeklySessions.length !== 1 ? 'es' : ''} esta semana 💪</p>
+            <p className="welcome-sub">
+              Llevas {weeklySessions.length} sesión{weeklySessions.length !== 1 ? 'es' : ''} esta semana 💪
+            </p>
           )}
         </div>
         <div className="welcome-date">{fechaStr}</div>
@@ -170,40 +179,52 @@ const Dashboard = () => {
       <div className="stats-grid">
         <div className="stat-card">
           <span className="stat-valor">
-            {weeklyLoading ? '—' : `${weeklySessions.length}/${activeDaysCount || '?'}`}
+            {weeklyLoading
+              ? '—'
+              : `${weeklySessions.length}/${activeDaysCount || '?'}`
+            }
           </span>
           <span className="stat-label">Sesiones</span>
           <span className="stat-sub">esta semana</span>
         </div>
+
         <div className="stat-card">
-          <span className="stat-valor">{isActive ? elapsedFormatted : '—'}</span>
+          <span className="stat-valor">
+            {isActive ? elapsedFormatted : '—'}
+          </span>
           <span className="stat-label">Tiempo</span>
           <span className="stat-sub">{isActive ? 'en curso' : 'sin sesión activa'}</span>
         </div>
+
         <div className="stat-card">
-          <span className="stat-valor">{sessionStats.totalLogs}</span>
+          <span className="stat-valor">{sessionStats.totalLogs || '—'}</span>
           <span className="stat-label">Ejercicios</span>
-          <span className="stat-sub">{isActive ? 'completados hoy' : 'última sesión'}</span>
+          <span className="stat-sub">
+            {isActive ? 'del entrenamiento' : todayExercises.length > 0 ? 'planificados hoy' : 'sin rutina hoy'}
+          </span>
         </div>
+
         <div className="stat-card">
-          <span className="stat-valor">{sessionStats.totalVolume > 0 ? `${sessionStats.totalVolume}kg` : '—'}</span>
+          <span className="stat-valor">
+            {sessionStats.totalVolume > 0 ? `${sessionStats.totalVolume}kg` : '—'}
+          </span>
           <span className="stat-label">Volumen</span>
-          <span className="stat-sub">{isActive ? 'esta sesión' : 'última sesión'}</span>
+          <span className="stat-sub">
+            {isActive ? 'esta sesión' : 'planificado hoy'}
+          </span>
         </div>
       </div>
 
-      {/* Sesión activa / Rutina del día */}
+      {/* Card de sesión */}
       <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">
-            {isActive
-              ? `⏱ Sesión en curso — ${elapsedFormatted}`
-              : routine
-                ? `Rutina activa — ${routine.name}`
-                : 'Sin rutina activa'
-            }
-          </h2>
-        </div>
+        <h2 className="card-title">
+          {isActive
+            ? `⏱ Sesión en curso — ${elapsedFormatted}`
+            : routine
+              ? `Rutina activa — ${routine.name}`
+              : 'Sin rutina activa'
+          }
+        </h2>
 
         {sessionError && (
           <div style={{ color: '#ff6b7a', fontSize: '0.875rem', padding: '0.5rem 0' }}>
@@ -225,23 +246,26 @@ const Dashboard = () => {
             ))}
           </div>
         ) : routine ? (
-          <p style={{ color: '#666', fontSize: '0.9rem' }}>No hay ejercicios asignados para hoy ({nombreDia}).</p>
+          <p style={{ color: '#666', fontSize: '0.9rem' }}>
+            No hay ejercicios asignados para hoy ({nombreDia}).
+          </p>
         ) : (
           <p style={{ color: '#666', fontSize: '0.9rem' }}>
             Ve a <strong>Rutinas</strong> para crear o activar una rutina.
           </p>
         )}
 
-        {/* Botones de sesión */}
+        {/* Botones */}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {!isActive ? (
             <button
               className="btn-iniciar"
               onClick={handleStartSession}
-              disabled={sessionLoading || !routine}
-              title={!routine ? 'Activa una rutina primero' : ''}
+              disabled={!canStart}
+              title={!routine ? 'Activa una rutina primero' : alreadyTrainedToday ? 'Ya entrenaste hoy' : ''}
+              style={alreadyTrainedToday ? { background: 'linear-gradient(90deg,#28a745,#20c997)', cursor: 'default' } : {}}
             >
-              {sessionLoading ? 'Iniciando...' : 'Iniciar entrenamiento'}
+              {startBtnLabel}
             </button>
           ) : (
             <>
@@ -264,7 +288,7 @@ const Dashboard = () => {
                   padding: '1rem 1.5rem',
                   fontSize: '0.9rem',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: sessionLoading ? 'not-allowed' : 'pointer'
                 }}
               >
                 Cancelar

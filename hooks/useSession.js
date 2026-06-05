@@ -5,6 +5,7 @@ import { useRoutineContext } from '../contexts/RoutineContext'
 export const useSession = () => {
   const {
     session,
+    lastCompleted,
     isActive,
     loading,
     error,
@@ -35,17 +36,14 @@ export const useSession = () => {
   })()
 
   const formatElapsed = (seconds) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-    const s = (seconds % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
+    const s = Math.max(0, seconds)
+    const m = Math.floor(s / 60).toString().padStart(2, '0')
+    const ss = (s % 60).toString().padStart(2, '0')
+    return `${m}:${ss}`
   }
 
   const logExercise = useCallback(async ({
-    exerciseId,
-    performedSets,
-    performedReps,
-    performedWeightKg,
-    notes
+    exerciseId, performedSets, performedReps, performedWeightKg, notes
   }) => {
     return addLog({
       exercise_id: exerciseId,
@@ -62,20 +60,29 @@ export const useSession = () => {
   }, [session])
 
   const sessionStats = (() => {
-    if (!session?.logs) return { totalLogs: 0, totalVolume: 0 }
-    const logs = session.logs
-    const totalLogs = logs.length
-    const totalVolume = logs.reduce((acc, log) => {
-      const sets = log.performed_sets || 0
-      const reps = log.performed_reps || 0
-      const weight = log.performed_weight_kg || 0
-      return acc + (sets * reps * weight)
-    }, 0)
-    return { totalLogs, totalVolume: Math.round(totalVolume) }
+    if (isActive && session?.logs) {
+      const logs = session.logs
+      const totalLogs = logs.length
+      const totalVolume = logs.reduce((acc, log) => {
+        return acc + ((log.performed_sets || 0) * (log.performed_reps || 0) * (log.performed_weight_kg || 0))
+      }, 0)
+      return { totalLogs, totalVolume: Math.round(totalVolume) }
+    }
+
+    if (todayExercises.length > 0) {
+      const totalLogs = todayExercises.length
+      const totalVolume = todayExercises.reduce((acc, re) => {
+        return acc + (re.target_weight_kg || 0)
+      }, 0)
+      return { totalLogs, totalVolume: Math.round(totalVolume) }
+    }
+
+    return { totalLogs: 0, totalVolume: 0 }
   })()
 
   return {
     session,
+    lastCompleted,
     isActive,
     loading,
     error,
