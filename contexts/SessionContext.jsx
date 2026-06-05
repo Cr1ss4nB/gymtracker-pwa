@@ -11,46 +11,49 @@ const SS_KEY = 'gymtracker_active_session'
 const SessionContext = createContext(null)
 
 export const SessionProvider = ({ children }) => {
-  const [session, setSession]           = useState(null)
-  const [lastCompleted, setLastCompleted] = useState(null) 
-  const [loading, setLoading]           = useState(false)
-  const [error, setError]               = useState('')
-  const [elapsed, setElapsed]           = useState(0)
-  const timerRef                        = useRef(null)
-  const restoredRef                     = useRef(false)    
-
-  // Persistencia sessionStorage
+  const [session,        setSession]        = useState(null)
+  const [lastCompleted,  setLastCompleted]  = useState(null)
+  const [loading,        setLoading]        = useState(false)
+  const [error,          setError]          = useState('')
+  const [elapsed,        setElapsed]        = useState(0)
+  const timerRef = useRef(null)
 
   const persistSession = useCallback((s) => {
     if (s) sessionStorage.setItem(SS_KEY, JSON.stringify(s))
     else   sessionStorage.removeItem(SS_KEY)
   }, [])
 
-  const startTimer = useCallback((startedAt) => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
+  // PATRÓN CORRECTO para StrictMode:
+  //  - El interval vive dentro de este effect, no en callbacks.
+  //  - El cleanup de StrictMode lo limpia → re-monta → lo re-arranca limpiamente.
+  //  - No hay funciones startTimer/stopTimer separadas que compitan.
+
+  useEffect(() => {
+    if (!session || session.status !== 'IN_PROGRESS' || !session.started_at) {
+      // Sin sesión activa: limpiar interval y resetear elapsed
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      setElapsed(0)
+      return
     }
-    const origin = Date.parse(startedAt) 
-    if (isNaN(origin)) return           
+
+    const origin = Date.parse(session.started_at)
+    if (isNaN(origin)) return
 
     setElapsed(Math.max(0, Math.round((Date.now() - origin) / 1000)))
 
+    if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
-      const secs = Math.round((Date.now() - origin) / 1000)
-      setElapsed(Math.max(0, secs))  
+      setElapsed(Math.max(0, Math.round((Date.now() - origin) / 1000)))
     }, 1000)
-  }, [])
 
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
+    return () => {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
-    setElapsed(0)
-  }, [])
-
-  // Restauración al montar
+  }, [session])
 
   useEffect(() => {
     const restore = async () => {
@@ -62,11 +65,9 @@ export const SessionProvider = ({ children }) => {
         if (res.data) {
           setSession(res.data)
           persistSession(res.data)
-          startTimer(res.data.started_at)
         } else {
           setSession(null)
           persistSession(null)
-          stopTimer()
         }
       } catch {
         const cached = sessionStorage.getItem(SS_KEY)
@@ -75,22 +76,14 @@ export const SessionProvider = ({ children }) => {
             const parsed = JSON.parse(cached)
             if (parsed?.status === 'IN_PROGRESS' && parsed?.started_at) {
               setSession(parsed)
-              startTimer(parsed.started_at)
             }
-          } catch { /* ignorar JSON inválido */ }
+          } catch { /* JSON inválido */ }
         }
       }
-
-      restoredRef.current = true
     }
 
     restore()
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
   }, [])
-
-  // Iniciar sesión
 
   const startSession = useCallback(async (routineId = null) => {
     setLoading(true)
@@ -98,10 +91,9 @@ export const SessionProvider = ({ children }) => {
     try {
       const res = await apiStart(routineId)
       const newSession = { ...res.data, logs: [] }
-      setSession(newSession)
-      setLastCompleted(null)     
+      setSession(newSession)      
+      setLastCompleted(null)
       persistSession(newSession)
-      startTimer(newSession.started_at)
       return newSession
     } catch (err) {
       setError(err.message)
@@ -109,9 +101,7 @@ export const SessionProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }, [persistSession, startTimer])
-
-  // Terminar sesión 
+  }, [persistSession])
 
   const finishSession = useCallback(async () => {
     if (!session) return
@@ -119,9 +109,8 @@ export const SessionProvider = ({ children }) => {
     setError('')
     try {
       const res = await apiFinish(session.id)
-      stopTimer()
       setLastCompleted({ ...res.data, logs: session.logs || [] })
-      setSession(null)
+      setSession(null)          
       persistSession(null)
       return res.data
     } catch (err) {
@@ -130,9 +119,7 @@ export const SessionProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }, [session, persistSession, stopTimer])
-
-  // Cancelar sesión
+  }, [session, persistSession])
 
   const cancelSession = useCallback(async () => {
     if (!session) return
@@ -140,8 +127,7 @@ export const SessionProvider = ({ children }) => {
     setError('')
     try {
       const res = await apiCancel(session.id)
-      stopTimer()
-      setSession(null)
+      setSession(null)          
       setLastCompleted(null)
       persistSession(null)
       return res.data
@@ -151,9 +137,7 @@ export const SessionProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }, [session, persistSession, stopTimer])
-
-  // Registrar log
+  }, [session, persistSession])
 
   const addLog = useCallback(async (logData) => {
     if (!session) throw new Error('No hay sesión activa')
@@ -174,8 +158,6 @@ export const SessionProvider = ({ children }) => {
     }
   }, [session, persistSession])
 
-  // Refresh desde backend
-
   const refreshSession = useCallback(async () => {
     if (!session?.id) return
     try {
@@ -186,10 +168,9 @@ export const SessionProvider = ({ children }) => {
       } else {
         setSession(null)
         persistSession(null)
-        stopTimer()
       }
     } catch { /* silencioso */ }
-  }, [session, persistSession, stopTimer])
+  }, [session, persistSession])
 
   const isActive = session?.status === 'IN_PROGRESS'
 
