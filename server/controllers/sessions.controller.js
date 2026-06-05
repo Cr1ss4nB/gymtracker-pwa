@@ -261,8 +261,30 @@ const addLog = async (req, res) => {
   res.status(201).json({ data })
 }
 
+const saveLocation = async (req, res) => {
+  const userId = req.user.id
+  const { session_id, event, lat, lng, accuracy } = req.body
+
+  if (!lat || !lng) return res.status(400).json({ error: 'Coordenadas requeridas' })
+
+  const { error } = await supabase
+    .from('location_history')
+    .insert({
+      user_id: userId,
+      session_id: session_id || null,
+      event: event || 'unknown',
+      lat,
+      lng,
+      accuracy: accuracy || null,
+      recorded_at: new Date().toISOString()
+    })
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ success: true })
+}
+
 module.exports = {
   startSession, finishSession, cancelSession,
   getActiveSession, getSessionHistory, getWeeklySessions,
-  getSessionById, addLog
+  getSessionById, addLog, saveLocation
 }

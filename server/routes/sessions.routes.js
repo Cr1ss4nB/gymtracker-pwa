@@ -9,9 +9,11 @@ const {
   getSessionHistory,
   getWeeklySessions,
   getSessionById,
-  addLog
+  addLog,
+  saveLocation
 } = require('../controllers/sessions.controller')
 
+router.post('/location', verifyToken, saveLocation)
 router.get('/active', verifyToken, getActiveSession)
 router.get('/history', verifyToken, getSessionHistory)
 router.get('/weekly', verifyToken, getWeeklySessions)

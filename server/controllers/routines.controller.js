@@ -1,4 +1,5 @@
 const supabase = require('../config/db')
+const { sendNotification } = require('../lib/push')
 
 const ROUTINE_SELECT = 'id, user_id, name, description, is_template, template_type, equipment_type, days_per_week, is_favorite, is_active, created_at, updated_at'
 
@@ -470,6 +471,19 @@ const updateExercise = async (req, res) => {
     .eq('id', routineExerciseId).select(ROUTINE_EXERCISES_SELECT).single()
 
   if (error) return res.status(500).json({ error: error.message })
+
+  // Alerta si el peso supera 50kg
+  if (
+    updates.target_weight_kg !== undefined &&
+    Number(updates.target_weight_kg) > 50
+  ) {
+    sendNotification(userId, {
+      title: '⚠️ Peso elevado detectado',
+      body: `Pusiste ${updates.target_weight_kg}kg en un ejercicio. Asegúrate de que es seguro para ti.`,
+      url: '/rutinas'
+    }).catch(() => {}) // No bloquear la respuesta si push falla
+  }
+
   res.json({ data })
 }
 
