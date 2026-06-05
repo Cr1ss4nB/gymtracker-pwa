@@ -8,17 +8,52 @@ const LOG_SELECT = `
   exercises (id, name, muscle_group, equipment, difficulty)
 `
 
+const hasCompletedSessionToday = async (userId) => {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const { data } = await supabase
+    .from('workout_sessions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'COMPLETED')
+    .gte('started_at', todayStart.toISOString())
+    .lte('started_at', todayEnd.toISOString())
+    .limit(1)
+
+  return data && data.length > 0
+}
+
 // POST /api/sessions/start
 
 const startSession = async (req, res) => {
   const userId = req.user.id
   const { routine_id } = req.body
 
-  await supabase
+  const alreadyDone = await hasCompletedSessionToday(userId)
+  if (alreadyDone) {
+    return res.status(409).json({
+      error: 'Ya completaste tu entrenamiento hoy. ¡Vuelve mañana!',
+      code: 'ALREADY_TRAINED_TODAY'
+    })
+  }
+
+  const { data: existing } = await supabase
     .from('workout_sessions')
-    .update({ status: 'CANCELLED', finished_at: new Date().toISOString() })
+    .select(SESSION_SELECT)
     .eq('user_id', userId)
     .eq('status', 'IN_PROGRESS')
+    .limit(1)
+    .single()
+
+  if (existing) {
+    const { data: logs } = await supabase
+      .from('session_exercise_logs').select(LOG_SELECT)
+      .eq('session_id', existing.id).order('created_at', { ascending: true })
+    return res.status(200).json({ data: { ...existing, logs: logs || [] }, resumed: true })
+  }
 
   if (routine_id) {
     const { data: routine } = await supabase
@@ -69,7 +104,7 @@ const finishSession = async (req, res) => {
   res.json({ data })
 }
 
-// POST /api/sessions/:id/cancel
+// POST /api/sessions/:id/cancel 
 
 const cancelSession = async (req, res) => {
   const userId = req.user.id
@@ -119,11 +154,11 @@ const getActiveSession = async (req, res) => {
   res.json({ data: { ...session, logs: logs || [] } })
 }
 
-// GET /api/sessions/history
+// GET /api/sessions/history 
 
 const getSessionHistory = async (req, res) => {
   const userId = req.user.id
-  const limit = parseInt(req.query.limit) || 20
+  const limit  = parseInt(req.query.limit)  || 20
   const offset = parseInt(req.query.offset) || 0
 
   const { data, error, count } = await supabase
@@ -154,17 +189,26 @@ const getWeeklySessions = async (req, res) => {
   sunday.setDate(monday.getDate() + 6)
   sunday.setHours(23, 59, 59, 999)
 
-  const { data, error, count } = await supabase
+  const { data, error } = await supabase
     .from('workout_sessions')
-    .select(SESSION_SELECT, { count: 'exact' })
+    .select(SESSION_SELECT)
     .eq('user_id', userId)
     .eq('status', 'COMPLETED')
     .gte('started_at', monday.toISOString())
     .lte('started_at', sunday.toISOString())
-    .order('started_at', { ascending: false })
+    .order('started_at', { ascending: true })
 
   if (error) return res.status(500).json({ error: error.message })
-  res.json({ data: data || [], total: count || 0, week_start: monday.toISOString() })
+
+  const seenDays = new Set()
+  const unique = (data || []).filter(s => {
+    const day = new Date(s.started_at).toDateString()
+    if (seenDays.has(day)) return false
+    seenDays.add(day)
+    return true
+  })
+
+  res.json({ data: unique, total: unique.length, week_start: monday.toISOString() })
 }
 
 // GET /api/sessions/:id
@@ -206,8 +250,8 @@ const addLog = async (req, res) => {
     .from('session_exercise_logs')
     .insert({
       session_id: id, exercise_id,
-      performed_sets: performed_sets || null,
-      performed_reps: performed_reps || null,
+      performed_sets:    performed_sets    || null,
+      performed_reps:    performed_reps    || null,
       performed_weight_kg: performed_weight_kg || null,
       notes: notes || null
     })
